@@ -23,7 +23,8 @@ export function ProductCard({ card, tone = "dark" }: { card: ProductCardModel; t
       <div className="stage relative aspect-[4/5] overflow-hidden">
         <Link href={href} className="absolute inset-0 z-[1]" aria-label={`${card.name}, ${active.name}`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={active.image} alt="" className="h-full w-full object-cover transition-transform duration-slow ease-tide group-hover:scale-[1.03]" />
+          <img src={active.image} alt="" className="h-full w-full object-cover transition-transform duration-slow ease-tide group-hover:scale-[1.04]" />
+          <span className="card-sheen pointer-events-none absolute inset-0 z-[2]" aria-hidden="true" />
         </Link>
         <div className="pointer-events-none absolute left-3 top-3 z-[2] flex flex-col gap-1">
           {card.tags.map((tag) => (

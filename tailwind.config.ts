@@ -41,6 +41,7 @@ const config: Config = {
       },
       fontSize: {
         hero: ["var(--t-hero)", { lineHeight: "0.92", letterSpacing: "-0.035em" }],
+        display: ["var(--t-display)", { lineHeight: "0.9", letterSpacing: "-0.04em" }],
         h1: ["var(--t-h1)", { lineHeight: "0.95", letterSpacing: "-0.03em" }],
         h2: ["var(--t-h2)", { lineHeight: "1", letterSpacing: "-0.02em" }],
         h3: ["var(--t-h3)", { lineHeight: "1.1" }],

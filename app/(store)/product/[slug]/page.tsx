@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BuyBox } from "@/components/pdp/BuyBox";
+import { FrameIn } from "@/components/pdp/FrameIn";
 import { ProductCard } from "@/components/product/ProductCard";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { Heading } from "@/components/ui/Heading";
@@ -51,12 +52,12 @@ export default async function ProductPage({
       </p>
       <div className="mt-6 grid gap-10 lg:grid-cols-12">
         <div className="lg:col-span-7">
-          <div data-pdp-image className="stage aspect-[4/5] overflow-hidden">
+          <FrameIn className="stage aspect-[4/5] overflow-hidden">
             {primary ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={primary.src} alt={primary.alt} className="h-full w-full object-cover" />
             ) : null}
-          </div>
+          </FrameIn>
           {colorway.images.length > 1 ? (
             <div className="mt-3 grid grid-cols-2 gap-3">
               {colorway.images.slice(1).map((image) => (

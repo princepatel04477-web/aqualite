@@ -50,6 +50,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
       const lenis = new Lenis({ lerp: 0.1, smoothWheel: true, syncTouch: false }) as LenisLike;
       lenisRef.current = lenis;
       lenis.on("scroll", ScrollTrigger.update);
+      ScrollTrigger.refresh();
       ticker = (time: number) => lenis.raf(time * 1000);
       gsap.ticker.add(ticker);
       gsap.ticker.lagSmoothing(0);

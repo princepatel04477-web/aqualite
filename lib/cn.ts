@@ -6,7 +6,7 @@ const merge = extendTailwindMerge({
     classGroups: {
       "font-size": [
         {
-          text: ["hero", "h1", "h2", "h3", "lead", "body", "small", "eyebrow", "price", "size", "button", "logo", "mark"],
+          text: ["hero", "display", "h1", "h2", "h3", "lead", "body", "small", "eyebrow", "price", "size", "button", "logo", "mark"],
         },
       ],
     },

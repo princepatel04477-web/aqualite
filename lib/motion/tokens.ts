@@ -8,6 +8,8 @@ export const gsapEase = {
   tide: "power3.out",
   surface: "power2.inOut",
   drop: "back.out(1.6)",
+  linear: "none",
+  drift: "sine.inOut",
 } as const;
 
 export const duration = {

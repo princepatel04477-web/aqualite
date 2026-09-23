@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { RiseGrid } from "@/components/motion/RiseGrid";
 import { ProductCard } from "@/components/product/ProductCard";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { Heading } from "@/components/ui/Heading";
@@ -46,7 +47,7 @@ export function ListingView({
       <div className="mt-6 flex flex-wrap gap-3 font-mono text-eyebrow uppercase">
         {(["featured", "new", "price-asc", "price-desc"] as const).map((sort) => (
           <Link key={sort} href={listingHref(base, params, { sort })} className={params.sort === sort ? "text-aqua" : "text-mist"}>
-            {sort}
+{sort === "featured" ? "Featured" : sort === "new" ? "New" : sort === "price-asc" ? "Price, low" : "Price, high"}
           </Link>
         ))}
       </div>
@@ -116,11 +117,11 @@ export function ListingView({
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-x-gutter gap-y-10 xl:grid-cols-3">
+          <RiseGrid className="grid grid-cols-2 gap-x-gutter gap-y-10 xl:grid-cols-3">
             {listing.items.map((card) => (
               <ProductCard key={`${card.productId}-${card.colorwaySlug}`} card={card} />
             ))}
-          </div>
+          </RiseGrid>
         )}
       </div>
       {listing.page * listing.pageSize < listing.total ? (

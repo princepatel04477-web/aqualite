@@ -38,6 +38,7 @@
 
   /* Type scale */
   --t-hero: clamp(3.5rem, 9vw, 10rem);
+  --t-display: clamp(3.25rem, 7.4vw, 8.75rem);
   --t-h1: clamp(2.75rem, 6vw, 6rem);
   --t-h2: clamp(2.25rem, 4.5vw, 4.5rem);
   --t-h3: clamp(1.5rem, 2.2vw, 2rem);
