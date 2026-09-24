@@ -42,7 +42,7 @@ export function StoreChrome({
 
   return (
     <CartProvider initial={initialCart}>
-      <div className="fixed inset-x-0 top-0 z-header">
+      <div className="fixed inset-x-0 top-0 z-header pt-safe">
         <AnnouncementBar messages={announcements} />
         <Header nav={nav} onSearch={() => setSearch(true)} onMenu={() => setMenu(true)} overlayOpen={menu || search} />
       </div>

@@ -41,7 +41,9 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
   const scrollY = useRef(0);
 
   useEffect(() => {
+    // Touch devices use native scrolling — never download Lenis on mobile.
     if (reduced || tier === "low") return;
+    if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) return;
     let alive = true;
     let ticker: ((time: number) => void) | null = null;
     void import("lenis").then((mod) => {

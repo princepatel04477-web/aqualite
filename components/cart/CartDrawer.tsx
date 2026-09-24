@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 
 import { useCart } from "@/components/cart/CartProvider";
 import { useLenis } from "@/components/motion/SmoothScroll";
+import { useMediaQuery } from "@/lib/mobile/useMediaQuery";
 import { Button } from "@/components/ui/Button";
 import { IconClose, IconMinus, IconPlus } from "@/components/ui/Icons";
 import { formatINR } from "@/lib/money";
@@ -14,6 +15,7 @@ import { duration, ease } from "@/lib/motion/tokens";
 export function CartDrawer() {
   const { summary, open, setOpen, update, remove } = useCart();
   const { lock, unlock } = useLenis();
+  const isSmall = useMediaQuery("(max-width: 639px)");
 
   useEffect(() => {
     if (!open) return;
@@ -47,12 +49,27 @@ export function CartDrawer() {
             role="dialog"
             aria-modal="true"
             aria-label="Bag"
-            className="fixed inset-y-0 right-0 z-drawer flex w-full max-w-[440px] flex-col bg-trench"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
+            className={
+              isSmall
+                ? "fixed inset-x-0 bottom-0 z-drawer flex max-h-[92dvh] flex-col rounded-t-[16px] bg-trench"
+                : "fixed inset-y-0 right-0 z-drawer flex w-full max-w-[440px] flex-col bg-trench"
+            }
+            initial={isSmall ? { y: "100%" } : { x: "100%" }}
+            animate={isSmall ? { y: 0 } : { x: 0 }}
+            exit={isSmall ? { y: "100%" } : { x: "100%" }}
             transition={{ duration: duration.base, ease: ease.tide }}
+            drag={isSmall ? "y" : false}
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.4 }}
+            onDragEnd={(_event, info) => {
+              if (isSmall && (info.offset.y > 80 || info.velocity.y > 600)) setOpen(false);
+            }}
           >
+            {isSmall ? (
+              <div className="flex justify-center pt-3" aria-hidden="true">
+                <span className="h-1 w-10 rounded-pill bg-hairline" />
+              </div>
+            ) : null}
             <div className="flex items-center justify-between border-b border-hairline px-5 py-4">
               <p className="font-mono text-eyebrow uppercase text-mist">Bag · {summary.count}</p>
               <button type="button" aria-label="Close" onClick={() => setOpen(false)}>
@@ -117,7 +134,7 @@ export function CartDrawer() {
                 </ul>
               )}
             </div>
-            <div className="border-t border-hairline px-5 py-5">
+            <div className="sticky bottom-0 border-t border-hairline bg-trench px-5 pt-5 pb-safe">
               <div className="mb-1 flex justify-between font-body">
                 <span>Subtotal</span>
                 <span className="tabular">{formatINR(summary.subtotalPaise)}</span>

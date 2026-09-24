@@ -43,6 +43,75 @@
   textarea {
     font: inherit;
   }
+
+  /* Mobile: kill the 300ms tap delay and the blue flash on tap. */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  summary,
+  [role="button"],
+  label {
+    touch-action: manipulation;
+  }
+
+  /* iOS zooms the page when a focused input is < 16px. Pin fields on
+     phones so the keyboard never triggers a layout zoom. */
+  @media (max-width: 767px) {
+    input:not([type="button"]):not([type="submit"]):not([type="hidden"]),
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+}
+
+/* Headlines balance; long body copy wraps prettily. */
+h1,
+h2,
+h3,
+[class*="font-display"] {
+  text-wrap: balance;
+}
+
+p,
+li {
+  text-wrap: pretty;
+}
+
+/* Brief, designed tap acknowledgement on touch-only devices. */
+@media (pointer: coarse) {
+  a:active,
+  button:active,
+  [role="button"]:active {
+    transform: scale(0.97);
+  }
+}
+
+@layer components {
+  /* Safe-area helpers for fixed chrome (header top, bottom bars). */
+  .pt-safe {
+    padding-top: var(--safe-top);
+  }
+
+  .pb-safe {
+    padding-bottom: var(--safe-bottom);
+  }
+
+  .px-safe {
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+  }
+
+  .inset-safe-x {
+    left: var(--safe-left);
+    right: var(--safe-right);
+  }
 }
 
 @layer components {
@@ -136,6 +205,106 @@
   animation-play-state: paused;
 }
 
+/* M06 · mobile home choreography ─────────────────────────────────── */
+
+/* Wet Ink mobile fallback: hero lines fade/rise 8px. CSS-only so it
+   runs pre-hydration with zero CLS and no flash; Motion owns the JS
+   lifecycle moves elsewhere on the page. */
+.hero-mline {
+  animation: aq-line-rise var(--dur-base) var(--ease-tide) both;
+}
+
+@keyframes aq-line-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Velocity band: one mobile row runs at velocity 20 and pauses while
+   the band is offscreen (IntersectionObserver sets data-paused). */
+@media (max-width: 1023px) {
+  .marquee-track {
+    --marquee-duration: 20s;
+  }
+}
+
+[data-paused="true"] .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Low tier / reduced motion render the band as one static line. */
+.marquee-static,
+.marquee-static.reverse {
+  animation: none !important;
+}
+
+/* Snap rails hide their scrollbar on phones — the progress line under
+   the rail carries position instead. */
+@media (max-width: 1023px) {
+  .rail {
+    scrollbar-width: none;
+  }
+
+  .rail::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* M07 · listing + card touch patterns ────────────────────────────── */
+
+/* Category chip rail: fade both edges so the row reads as scrollable. */
+.fade-x {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 1rem,
+    black calc(100% - 1rem),
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 1rem,
+    black calc(100% - 1rem),
+    transparent
+  );
+}
+
+/* Grid reflow on touch is fade-only (no springs, no movement) — new
+   tiles fade in as they append, keeping 60fps on budget phones.
+   Desktop keeps the GSAP rise (see RiseGrid). */
+@media (max-width: 1023px), (pointer: coarse) {
+  .rise-grid > * {
+    animation: aq-fade-in var(--dur-base) var(--ease-tide) both;
+  }
+
+  .rise-grid > *:nth-child(2) {
+    animation-delay: 40ms;
+  }
+
+  .rise-grid > *:nth-child(3) {
+    animation-delay: 80ms;
+  }
+
+  .rise-grid > *:nth-child(4) {
+    animation-delay: 120ms;
+  }
+}
+
+@keyframes aq-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes aq-marquee {
   from {
     transform: translateX(0);
@@ -147,31 +316,55 @@
 
 @media (prefers-reduced-motion: reduce) {
   .marquee-track,
+  .hero-mline,
   .dot-pulse span,
   .spin-slow,
-  .card-sheen {
+  .card-sheen,
+  .rise-grid > * {
     animation: none !important;
     transition: none !important;
   }
 }
 
 .hero-glow {
-  background: radial-gradient(ellipse at 58% 40%, rgb(var(--aqua-deep) / 0.22), transparent 42%);
+  background: radial-gradient(
+    ellipse at 58% 40%,
+    rgb(var(--aqua-deep) / 0.22),
+    transparent 42%
+  );
 }
 
 .hero-vignette {
   background:
-    linear-gradient(to top, rgb(var(--abyss)) 0%, rgb(var(--abyss) / 0.92) 22%, transparent 52%),
+    linear-gradient(
+      to top,
+      rgb(var(--abyss)) 0%,
+      rgb(var(--abyss) / 0.92) 22%,
+      transparent 52%
+    ),
     linear-gradient(to bottom, rgb(var(--abyss) / 0.8), transparent 20%);
 }
 
 .hero-shoe {
-  -webkit-mask-image: radial-gradient(ellipse 64% 54% at 50% 50%, black 42%, transparent 76%);
-  mask-image: radial-gradient(ellipse 64% 54% at 50% 50%, black 42%, transparent 76%);
+  -webkit-mask-image: radial-gradient(
+    ellipse 64% 54% at 50% 50%,
+    black 42%,
+    transparent 76%
+  );
+  mask-image: radial-gradient(
+    ellipse 64% 54% at 50% 50%,
+    black 42%,
+    transparent 76%
+  );
 }
 
 .card-sheen {
-  background: linear-gradient(115deg, transparent 36%, rgb(var(--foam) / 0.28) 50%, transparent 64%);
+  background: linear-gradient(
+    115deg,
+    transparent 36%,
+    rgb(var(--foam) / 0.28) 50%,
+    transparent 64%
+  );
   transform: translateX(-130%);
   transition: transform var(--dur-slow) var(--ease-tide);
 }
@@ -199,4 +392,14 @@
 
 ::-webkit-scrollbar-track {
   background: transparent;
+}
+
+@layer utilities {
+  /* Skip rendering of below-fold sections until they approach the
+     viewport. Cuts layout/paint cost on long mobile pages. Pair with a
+     contain-intrinsic-size so the scrollbar doesn't jump. */
+  .cv-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 640px;
+  }
 }

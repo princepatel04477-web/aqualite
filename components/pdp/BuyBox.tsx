@@ -42,7 +42,8 @@ export function BuyBox({
           <Link
             key={item.slug}
             href={`/product/${product.slug}?color=${item.slug}${size ? `&size=${size}` : ""}`}
-            aria-label={item.name}
+            aria-label={`Colour: ${item.name}`}
+            aria-current={item.slug === colorway.slug ? "true" : undefined}
             className={`h-8 w-8 rounded-pill border ${item.slug === colorway.slug ? "border-aqua" : "border-hairline"}`}
             style={{ background: `rgb(var(--swatch-${item.swatch}))` }}
           />
@@ -50,15 +51,26 @@ export function BuyBox({
       </div>
       {price ? <Price className="mt-6" paise={price.pricePaise} mrpPaise={price.mrpPaise} tax size="lg" /> : null}
       <p className="mt-8 font-mono text-eyebrow uppercase text-mist">UK size</p>
-      <div className={`mt-3 grid grid-cols-4 gap-2 ${shake ? "animate-shake" : ""}`}>
+      <div
+        role="radiogroup"
+        aria-label="UK size"
+        className={`mt-3 grid grid-cols-4 gap-2 ${shake ? "animate-shake" : ""}`}
+      >
         {colorway.variants.map((variant) => {
           const sold = availableOf(variant.id) <= 0;
           const active = String(variant.sizeUk) === size;
+          const low = !sold && availableOf(variant.id) <= 3;
+          const label = `UK ${variant.label}${
+            sold ? ", sold out" : low ? `, only ${availableOf(variant.id)} left` : ""
+          }`;
           return (
             <button
               key={variant.id}
               type="button"
-              aria-label={`UK ${variant.label}${sold ? ", sold out" : ""}`}
+              role="radio"
+              aria-checked={active}
+              aria-label={label}
+              aria-disabled={sold || undefined}
               className={`h-12 rounded-pill border font-mono text-size ${active ? "border-foam bg-foam text-abyss" : "border-hairline"} ${sold ? "text-mist line-through" : ""}`}
               onClick={() => {
                 setMessage("");

@@ -7,11 +7,14 @@ import { useState } from "react";
 import { subscribeAction } from "@/lib/content/actions";
 import { footerColumns, company } from "@/content/site";
 import { Button } from "@/components/ui/Button";
+import { IconPlus } from "@/components/ui/Icons";
+import { cn } from "@/lib/cn";
 
 export function Footer() {
   const pathname = usePathname();
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [openColumn, setOpenColumn] = useState<string | null>(null);
   const year = new Date().getFullYear();
   const hideNewsletter = pathname === "/";
 
@@ -20,7 +23,9 @@ export function Footer() {
       {hideNewsletter ? null : (
         <div className="page-wrap grid gap-8 py-16 lg:grid-cols-12">
           <div className="lg:col-span-6">
-            <p className="font-mono text-eyebrow uppercase text-aqua">Newsletter</p>
+            <p className="font-mono text-eyebrow uppercase text-aqua">
+              Newsletter
+            </p>
             <p className="heading-display mt-3 font-display text-h2">
               Monsoon drops, <em>first</em>.
             </p>
@@ -36,10 +41,14 @@ export function Footer() {
               }
             }}
           >
-            <label className="font-mono text-eyebrow uppercase text-mist" htmlFor="footer-email">
+            <label
+              className="font-mono text-eyebrow uppercase text-mist"
+              htmlFor="footer-email"
+            >
               Email
             </label>
-            <div className="flex gap-2">
+            {/* Mobile: input and button stack full-width (M06). */}
+            <div className="flex flex-col gap-2 sm:flex-row">
               <input
                 id="footer-email"
                 name="email"
@@ -49,23 +58,80 @@ export function Footer() {
                 placeholder="you@email.com"
                 className="h-12 flex-1 border border-hairline bg-transparent px-3 text-foam outline-none"
               />
-              <Button type="submit" variant="primary">
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full sm:w-auto"
+              >
                 {done ? "Joined" : "Join"}
               </Button>
             </div>
             {error ? <p className="text-small text-danger">{error}</p> : null}
-            <input type="text" name="company" className="hidden" tabIndex={-1} autoComplete="off" />
+            <input
+              type="text"
+              name="company"
+              className="hidden"
+              tabIndex={-1}
+              autoComplete="off"
+            />
           </form>
         </div>
       )}
-      <div className="page-wrap grid gap-10 border-t border-hairline py-12 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Mobile: link columns collapse into 48px accordion rows (M06). */}
+      <div className="page-wrap border-t border-hairline py-3 lg:hidden">
+        {footerColumns.map((column, index) => {
+          const open = openColumn === column.title;
+          return (
+            <div
+              key={column.title}
+              className="border-b border-hairline last:border-b-0"
+            >
+              <button
+                type="button"
+                aria-expanded={open}
+                aria-controls={`footer-panel-${index}`}
+                onClick={() => setOpenColumn(open ? null : column.title)}
+                className="flex h-12 w-full items-center justify-between font-mono text-eyebrow uppercase text-mist"
+              >
+                {column.title}
+                <IconPlus
+                  className={cn(
+                    "h-4 w-4 transition-transform duration-quick ease-tide",
+                    open && "rotate-45",
+                  )}
+                />
+              </button>
+              <div id={`footer-panel-${index}`} hidden={!open}>
+                <ul className="pb-3">
+                  {column.links.map((link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="link-draw flex h-12 items-center font-body text-small text-foam"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="page-wrap hidden gap-10 border-t border-hairline py-12 sm:grid-cols-2 lg:grid lg:grid-cols-4">
         {footerColumns.map((column) => (
           <div key={column.title}>
-            <p className="font-mono text-eyebrow uppercase text-mist">{column.title}</p>
+            <p className="font-mono text-eyebrow uppercase text-mist">
+              {column.title}
+            </p>
             <ul className="mt-4 space-y-2">
               {column.links.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="link-draw font-body text-small text-foam">
+                  <Link
+                    href={link.href}
+                    className="link-draw font-body text-small text-foam"
+                  >
                     {link.label}
                   </Link>
                 </li>
@@ -81,7 +147,7 @@ export function Footer() {
       </div>
       <div className="page-wrap flex flex-wrap items-center justify-between gap-3 border-t border-hairline py-4 font-mono text-eyebrow uppercase text-mist">
         <span>© {year} Aqualite</span>
-        <span>GSTIN {company.gstin}{company.verified ? "" : " · draft"}</span>
+        {company.verified ? <span>GSTIN {company.gstin}</span> : null}
         <span>UPI · Cards · COD</span>
       </div>
     </footer>

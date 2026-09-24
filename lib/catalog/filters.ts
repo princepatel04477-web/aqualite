@@ -5,6 +5,22 @@ export const PAGE_SIZE = 24;
 
 export type SortKey = "featured" | "new" | "price-asc" | "price-desc";
 
+/** Shared sort labels (desktop link row, mobile sort sheet — M07). */
+export const SORT_LABELS: Record<SortKey, string> = {
+  featured: "Featured",
+  new: "New",
+  "price-asc": "Price, low to high",
+  "price-desc": "Price, high to low",
+};
+
+/** Shared price presets (desktop aside, mobile filter sheet — M07). */
+export const PRICE_PRESETS: { label: string; min: number; max?: number }[] = [
+  { label: "Under ₹499", min: 0, max: 49900 },
+  { label: "₹500–₹999", min: 50000, max: 99900 },
+  { label: "₹1,000–₹1,999", min: 100000, max: 199900 },
+  { label: "₹2,000+", min: 200000, max: undefined },
+];
+
 export type ListingParams = {
   gender?: Gender;
   category?: string;
@@ -23,7 +39,18 @@ export type ListingParams = {
 
 const SORTS: SortKey[] = ["featured", "new", "price-asc", "price-desc"];
 const GENDERS: Gender[] = ["men", "women", "kids", "unisex"];
-const COLORS: ColorFamily[] = ["black", "white", "blue", "grey", "brown", "green", "red", "pink", "beige", "multi"];
+const COLORS: ColorFamily[] = [
+  "black",
+  "white",
+  "blue",
+  "grey",
+  "brown",
+  "green",
+  "red",
+  "pink",
+  "beige",
+  "multi",
+];
 
 function first(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) return value[0];
@@ -38,7 +65,10 @@ function numbers(value: string | undefined): number[] {
     .filter((num) => Number.isFinite(num));
 }
 
-function tokens(value: string | undefined, allowed: readonly string[]): string[] {
+function tokens(
+  value: string | undefined,
+  allowed: readonly string[],
+): string[] {
   if (!value) return [];
   return value
     .split(",")
@@ -46,7 +76,9 @@ function tokens(value: string | undefined, allowed: readonly string[]): string[]
     .filter((part) => allowed.includes(part));
 }
 
-export function parseListing(input: Record<string, string | string[] | undefined>): ListingParams {
+export function parseListing(
+  input: Record<string, string | string[] | undefined>,
+): ListingParams {
   const genderRaw = first(input.gender);
   const sortRaw = first(input.sort);
   const viewRaw = first(input.view);
@@ -55,22 +87,37 @@ export function parseListing(input: Record<string, string | string[] | undefined
   const priceMax = Number(first(input.priceMax));
   const q = first(input.q)?.trim();
   return {
-    gender: genderRaw && GENDERS.includes(genderRaw as Gender) ? (genderRaw as Gender) : undefined,
+    gender:
+      genderRaw && GENDERS.includes(genderRaw as Gender)
+        ? (genderRaw as Gender)
+        : undefined,
     category: first(input.category) || undefined,
     collection: first(input.collection) || undefined,
     sizes: numbers(first(input.sizes)),
     colors: tokens(first(input.colors), COLORS) as ColorFamily[],
     priceMin: Number.isFinite(priceMin) ? priceMin : undefined,
     priceMax: Number.isFinite(priceMax) ? priceMax : undefined,
-    features: tokens(first(input.features), ["waterproof", "anti-skid", "lightweight", "quick-dry", "cushioned"]),
-    sort: sortRaw && SORTS.includes(sortRaw as SortKey) ? (sortRaw as SortKey) : "featured",
+    features: tokens(first(input.features), [
+      "waterproof",
+      "anti-skid",
+      "lightweight",
+      "quick-dry",
+      "cushioned",
+    ]),
+    sort:
+      sortRaw && SORTS.includes(sortRaw as SortKey)
+        ? (sortRaw as SortKey)
+        : "featured",
     page: Number.isInteger(pageRaw) && pageRaw > 0 ? pageRaw : 1,
     q: q || undefined,
     view: viewRaw === "large" || viewRaw === "compact" ? viewRaw : undefined,
   };
 }
 
-export function toQuery(params: ListingParams, overrides: Partial<ListingParams> = {}): string {
+export function toQuery(
+  params: ListingParams,
+  overrides: Partial<ListingParams> = {},
+): string {
   const next = { ...params, ...overrides };
   const search = new URLSearchParams();
   if (next.gender && !overrides.gender) {
@@ -78,8 +125,10 @@ export function toQuery(params: ListingParams, overrides: Partial<ListingParams>
   }
   if (next.sizes.length) search.set("sizes", next.sizes.join(","));
   if (next.colors.length) search.set("colors", next.colors.join(","));
-  if (next.priceMin !== undefined) search.set("priceMin", String(next.priceMin));
-  if (next.priceMax !== undefined) search.set("priceMax", String(next.priceMax));
+  if (next.priceMin !== undefined)
+    search.set("priceMin", String(next.priceMin));
+  if (next.priceMax !== undefined)
+    search.set("priceMax", String(next.priceMax));
   if (next.features.length) search.set("features", next.features.join(","));
   if (next.sort !== "featured") search.set("sort", next.sort);
   if (next.page > 1) search.set("page", String(next.page));
@@ -89,37 +138,72 @@ export function toQuery(params: ListingParams, overrides: Partial<ListingParams>
   return text ? `?${text}` : "";
 }
 
-function matches(card: ProductCardModel, params: ListingParams, ignore?: keyof ListingParams): boolean {
-  if (params.productIds && !params.productIds.includes(card.productId)) return false;
-  if (ignore !== "gender" && params.gender && card.gender !== params.gender && card.gender !== "unisex") return false;
-  if (ignore !== "category" && params.category && card.categorySlug !== params.category) return false;
+function matches(
+  card: ProductCardModel,
+  params: ListingParams,
+  ignore?: keyof ListingParams,
+): boolean {
+  if (params.productIds && !params.productIds.includes(card.productId))
+    return false;
+  if (
+    ignore !== "gender" &&
+    params.gender &&
+    card.gender !== params.gender &&
+    card.gender !== "unisex"
+  )
+    return false;
+  if (
+    ignore !== "category" &&
+    params.category &&
+    card.categorySlug !== params.category
+  )
+    return false;
   if (ignore !== "colors" && params.colors.length) {
-    const family = card.colorways.find((item) => item.slug === card.colorwaySlug)?.family ?? "multi";
+    const family =
+      card.colorways.find((item) => item.slug === card.colorwaySlug)?.family ??
+      "multi";
     if (!params.colors.includes(family)) return false;
   }
   if (ignore !== "priceMin" && ignore !== "priceMax") {
-    if (params.priceMin !== undefined && card.pricePaise < params.priceMin) return false;
-    if (params.priceMax !== undefined && card.pricePaise > params.priceMax) return false;
+    if (params.priceMin !== undefined && card.pricePaise < params.priceMin)
+      return false;
+    if (params.priceMax !== undefined && card.pricePaise > params.priceMax)
+      return false;
   }
-  if (ignore !== "features" && params.features.length && !params.features.every((feature) => card.features.includes(feature as ProductCardModel["features"][number]))) {
+  if (
+    ignore !== "features" &&
+    params.features.length &&
+    !params.features.every((feature) =>
+      card.features.includes(feature as ProductCardModel["features"][number]),
+    )
+  ) {
     return false;
   }
   if (ignore !== "sizes" && params.sizes.length) {
-    const colorway = card.colorways.find((item) => item.slug === card.colorwaySlug);
-    const okSize = params.sizes.some((size) => colorway?.sizes.some((row) => row.sizeUk === size && row.available > 0));
+    const colorway = card.colorways.find(
+      (item) => item.slug === card.colorwaySlug,
+    );
+    const okSize = params.sizes.some((size) =>
+      colorway?.sizes.some((row) => row.sizeUk === size && row.available > 0),
+    );
     if (!okSize) return false;
   }
   if (ignore !== "q" && params.q) {
-    const hay = `${card.name} ${card.subtitle} ${card.category} ${card.colorwayName}`.toLowerCase();
+    const hay =
+      `${card.name} ${card.subtitle} ${card.category} ${card.colorwayName}`.toLowerCase();
     if (!hay.includes(params.q.toLowerCase())) return false;
   }
   return true;
 }
 
-function sortCards(cards: ProductCardModel[], sort: SortKey): ProductCardModel[] {
+function sortCards(
+  cards: ProductCardModel[],
+  sort: SortKey,
+): ProductCardModel[] {
   const copy = [...cards];
   copy.sort((a, b) => {
-    if (sort === "featured" && a.soldOut !== b.soldOut) return a.soldOut ? 1 : -1;
+    if (sort === "featured" && a.soldOut !== b.soldOut)
+      return a.soldOut ? 1 : -1;
     if (sort === "price-asc") return a.pricePaise - b.pricePaise;
     if (sort === "price-desc") return b.pricePaise - a.pricePaise;
     if (sort === "new") return Number(b.isNew) - Number(a.isNew);
@@ -129,14 +213,21 @@ function sortCards(cards: ProductCardModel[], sort: SortKey): ProductCardModel[]
   return copy;
 }
 
-export function applyListing(cards: ProductCardModel[], params: ListingParams): ListingResult {
+export function applyListing(
+  cards: ProductCardModel[],
+  params: ListingParams,
+): ListingResult {
   const filtered = sortCards(
     cards.filter((card) => matches(card, params)),
     params.sort,
   );
   const start = (params.page - 1) * PAGE_SIZE;
-  const facetSource = (ignore: keyof ListingParams) => cards.filter((card) => matches(card, params, ignore));
-  const countBy = (list: ProductCardModel[], pick: (card: ProductCardModel) => string[]): Map<string, number> => {
+  const facetSource = (ignore: keyof ListingParams) =>
+    cards.filter((card) => matches(card, params, ignore));
+  const countBy = (
+    list: ProductCardModel[],
+    pick: (card: ProductCardModel) => string[],
+  ): Map<string, number> => {
     const map = new Map<string, number>();
     list.forEach((card) => {
       pick(card).forEach((value) => map.set(value, (map.get(value) ?? 0) + 1));
@@ -145,7 +236,9 @@ export function applyListing(cards: ProductCardModel[], params: ListingParams): 
   };
   const sizeCounts = new Map<string, number>();
   facetSource("sizes").forEach((card) => {
-    const colorway = card.colorways.find((item) => item.slug === card.colorwaySlug);
+    const colorway = card.colorways.find(
+      (item) => item.slug === card.colorwaySlug,
+    );
     const seen = new Set<number>();
     colorway?.sizes.forEach((size) => {
       if (size.available > 0 && !seen.has(size.sizeUk)) {
@@ -156,11 +249,17 @@ export function applyListing(cards: ProductCardModel[], params: ListingParams): 
     });
   });
   const colorCounts = countBy(facetSource("colors"), (card) => {
-    const family = card.colorways.find((item) => item.slug === card.colorwaySlug)?.family;
+    const family = card.colorways.find(
+      (item) => item.slug === card.colorwaySlug,
+    )?.family;
     return family ? [family] : [];
   });
-  const categoryCounts = countBy(facetSource("category"), (card) => [card.categorySlug]);
-  const featureCounts = countBy(facetSource("features"), (card) => [...card.features]);
+  const categoryCounts = countBy(facetSource("category"), (card) => [
+    card.categorySlug,
+  ]);
+  const featureCounts = countBy(facetSource("features"), (card) => [
+    ...card.features,
+  ]);
   const genderCounts = countBy(facetSource("gender"), (card) => [card.gender]);
   const prices = cards.map((card) => card.pricePaise);
   return {
@@ -172,10 +271,26 @@ export function applyListing(cards: ProductCardModel[], params: ListingParams): 
       sizes: [...sizeCounts.entries()]
         .map(([value, count]) => ({ value, label: value, count }))
         .sort((a, b) => Number(a.value) - Number(b.value)),
-      colors: [...colorCounts.entries()].map(([value, count]) => ({ value, label: value, count })),
-      categories: [...categoryCounts.entries()].map(([value, count]) => ({ value, label: value, count })),
-      features: [...featureCounts.entries()].map(([value, count]) => ({ value, label: value, count })),
-      genders: [...genderCounts.entries()].map(([value, count]) => ({ value, label: value, count })),
+      colors: [...colorCounts.entries()].map(([value, count]) => ({
+        value,
+        label: value,
+        count,
+      })),
+      categories: [...categoryCounts.entries()].map(([value, count]) => ({
+        value,
+        label: value,
+        count,
+      })),
+      features: [...featureCounts.entries()].map(([value, count]) => ({
+        value,
+        label: value,
+        count,
+      })),
+      genders: [...genderCounts.entries()].map(([value, count]) => ({
+        value,
+        label: value,
+        count,
+      })),
       price: {
         min: prices.length ? Math.min(...prices) : 0,
         max: prices.length ? Math.max(...prices) : 0,
@@ -189,19 +304,26 @@ export function listingHref(
   params: ListingParams,
   overrides: Partial<ListingParams>,
 ): string {
-  const next: ListingParams = { ...params, ...overrides, page: overrides.page ?? 1 };
+  const next: ListingParams = {
+    ...params,
+    ...overrides,
+    page: overrides.page ?? 1,
+  };
   const search = new URLSearchParams();
   if (next.sizes.length) search.set("sizes", next.sizes.join(","));
   if (next.colors.length) search.set("colors", next.colors.join(","));
-  if (next.priceMin !== undefined) search.set("priceMin", String(next.priceMin));
-  if (next.priceMax !== undefined) search.set("priceMax", String(next.priceMax));
+  if (next.priceMin !== undefined)
+    search.set("priceMin", String(next.priceMin));
+  if (next.priceMax !== undefined)
+    search.set("priceMax", String(next.priceMax));
   if (next.features.length) search.set("features", next.features.join(","));
   if (next.sort !== "featured") search.set("sort", next.sort);
   if (next.page > 1) search.set("page", String(next.page));
   if (next.q) search.set("q", next.q);
   if (next.view) search.set("view", next.view);
   if (next.gender && base === "/shop") search.set("gender", next.gender);
-  if (next.category && !base.includes(`/${next.category}`)) search.set("category", next.category);
+  if (next.category && !base.includes(`/${next.category}`))
+    search.set("category", next.category);
   const qs = search.toString();
   return qs ? `${base}?${qs}` : base;
 }

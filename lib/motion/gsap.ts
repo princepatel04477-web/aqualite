@@ -16,6 +16,17 @@ function registerOnce(): void {
 
 registerOnce();
 
+// Test hook — the mobile home spec asserts ScrollTrigger.getAll().length
+// === 0 on touch viewports (M06); the page bundle never exposes gsap.
+declare global {
+  interface Window {
+    __aqScrollTriggerCount?: () => number;
+  }
+}
+if (typeof window !== "undefined") {
+  window.__aqScrollTriggerCount = () => ScrollTrigger.getAll().length;
+}
+
 export { gsap, ScrollTrigger };
 
 export type SplitResult = {
@@ -59,7 +70,8 @@ export function splitLines(element: HTMLElement): SplitResult {
     inner.setAttribute("aria-hidden", "true");
     bucket.forEach((word, index) => {
       inner.appendChild(word);
-      if (index < bucket.length - 1) inner.appendChild(document.createTextNode(" "));
+      if (index < bucket.length - 1)
+        inner.appendChild(document.createTextNode(" "));
     });
     mask.appendChild(inner);
     lines.push(inner);

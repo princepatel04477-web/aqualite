@@ -1,0 +1,10 @@
+# Static, content-hashed assets — cache forever (immutable).
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Catalogue imagery is versioned per file; safe to cache long-term.
+/catalog/*
+  Cache-Control: public, max-age=31536000, immutable

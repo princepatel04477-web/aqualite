@@ -1,12 +1,29 @@
 import "server-only";
 
-import { CATEGORIES, collections, products as seedProducts, SIZE_CHART, type CatalogProduct } from "@/content/catalog";
+import {
+  CATEGORIES,
+  collections,
+  products as seedProducts,
+  SIZE_CHART,
+  type CatalogProduct,
+} from "@/content/catalog";
 import { applyListing, type ListingParams } from "@/lib/catalog/filters";
 import type { ProductCardModel } from "@/lib/commerce/types";
-import { availabilityMap, catalogProducts, reviewsFor, stockOf } from "@/lib/store/engine";
+import {
+  availabilityMap,
+  catalogProducts,
+  reviewsFor,
+  stockOf,
+} from "@/lib/store/engine";
 
-function cardFrom(product: CatalogProduct, colorwaySlug: string, stock: Record<string, number>): ProductCardModel | null {
-  const colorway = product.colorways.find((item) => item.slug === colorwaySlug) ?? product.colorways[0];
+function cardFrom(
+  product: CatalogProduct,
+  colorwaySlug: string,
+  stock: Record<string, number>,
+): ProductCardModel | null {
+  const colorway =
+    product.colorways.find((item) => item.slug === colorwaySlug) ??
+    product.colorways[0];
   if (!colorway) return null;
   const category = CATEGORIES.find((item) => item.slug === product.category);
   const colorways = product.colorways.map((item) => {
@@ -28,9 +45,13 @@ function cardFrom(product: CatalogProduct, colorwaySlug: string, stock: Record<s
       sizes,
     };
   });
-  const active = colorways.find((item) => item.slug === colorway.slug) ?? colorways[0];
+  const active =
+    colorways.find((item) => item.slug === colorway.slug) ?? colorways[0];
   if (!active) return null;
-  const totalAvailable = active.sizes.reduce((sum, size) => sum + size.available, 0);
+  const totalAvailable = active.sizes.reduce(
+    (sum, size) => sum + size.available,
+    0,
+  );
   const tags: ProductCardModel["tags"] = [];
   if (product.isNew) tags.push("New");
   if (totalAvailable <= 0) tags.push("Sold out");
@@ -58,8 +79,14 @@ function cardFrom(product: CatalogProduct, colorwaySlug: string, stock: Record<s
   };
 }
 
-async function stockFor(list: CatalogProduct[]): Promise<Record<string, number>> {
-  const ids = list.flatMap((product) => product.colorways.flatMap((colorway) => colorway.variants.map((variant) => variant.id)));
+async function stockFor(
+  list: CatalogProduct[],
+): Promise<Record<string, number>> {
+  const ids = list.flatMap((product) =>
+    product.colorways.flatMap((colorway) =>
+      colorway.variants.map((variant) => variant.id),
+    ),
+  );
   return availabilityMap(ids);
 }
 
@@ -78,13 +105,39 @@ export async function listProducts(params: ListingParams) {
   const cards = await allCards();
   let scoped = cards;
   if (params.collection) {
-    const collection = collections.find((item) => item.slug === params.collection);
+    const collection = collections.find(
+      (item) => item.slug === params.collection,
+    );
     const ids = new Set(
-      seedProducts.filter((product) => collection?.productSlugs.includes(product.slug)).map((product) => product.id),
+      seedProducts
+        .filter((product) => collection?.productSlugs.includes(product.slug))
+        .map((product) => product.id),
     );
     scoped = cards.filter((card) => ids.has(card.productId));
   }
   return applyListing(scoped, params);
+}
+
+/**
+ * Base scope for a listing route: every card the route can show, before
+ * facet filters (size/colour/price/sort) are applied. Pages hand this to
+ * ListingView so the mobile filter sheet can compute live counts and the
+ * grid can paginate locally without extra fetches (M07).
+ */
+export async function listScope(
+  params: ListingParams,
+): Promise<ProductCardModel[]> {
+  const cards = await allCards();
+  if (!params.collection) return cards;
+  const collection = collections.find(
+    (item) => item.slug === params.collection,
+  );
+  const ids = new Set(
+    seedProducts
+      .filter((product) => collection?.productSlugs.includes(product.slug))
+      .map((product) => product.id),
+  );
+  return cards.filter((card) => ids.has(card.productId));
 }
 
 export async function getNavigation() {
@@ -93,7 +146,9 @@ export async function getNavigation() {
     gender,
     categories: CATEGORIES.map((category) => ({
       ...category,
-      count: cards.filter((card) => card.gender === gender && card.categorySlug === category.slug).length,
+      count: cards.filter(
+        (card) => card.gender === gender && card.categorySlug === category.slug,
+      ).length,
     })).filter((category) => category.count > 0),
   }));
 }
@@ -105,10 +160,17 @@ export async function getProduct(slug: string) {
   const stock = await stockFor([product]);
   const cards = await allCards();
   const related = cards
-    .filter((card) => card.productId !== product.id && (card.categorySlug === product.category || card.gender === product.gender))
+    .filter(
+      (card) =>
+        card.productId !== product.id &&
+        (card.categorySlug === product.category ||
+          card.gender === product.gender),
+    )
     .slice(0, 8);
   const reviews = await reviewsFor(product.id);
-  const avg = reviews.length ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : 0;
+  const avg = reviews.length
+    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+    : 0;
   const fit = {
     runs_small: reviews.filter((review) => review.fit === "runs_small").length,
     true: reviews.filter((review) => review.fit === "true").length,
@@ -128,14 +190,20 @@ export async function getProduct(slug: string) {
   };
 }
 
-export async function getFeatured(kind: "new" | "bestsellers" | "featured"): Promise<ProductCardModel[]> {
+export async function getFeatured(
+  kind: "new" | "bestsellers" | "featured",
+): Promise<ProductCardModel[]> {
   const cards = await allCards();
   if (kind === "new") return cards.filter((card) => card.isNew).slice(0, 10);
   if (kind === "featured") {
-    const featured = cards.find((card) => card.slug === "tide-slide" && card.colorwaySlug === "midnight");
+    const featured = cards.find(
+      (card) => card.slug === "tide-slide" && card.colorwaySlug === "midnight",
+    );
     return featured ? [featured] : cards.slice(0, 1);
   }
-  return [...cards].sort((a, b) => Number(a.soldOut) - Number(b.soldOut)).slice(0, 4);
+  return [...cards]
+    .sort((a, b) => Number(a.soldOut) - Number(b.soldOut))
+    .slice(0, 4);
 }
 
 export async function getCollection(slug: string) {

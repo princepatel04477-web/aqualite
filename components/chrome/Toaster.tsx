@@ -8,7 +8,7 @@ import { duration, ease } from "@/lib/motion/tokens";
 export function Toaster() {
   const { toasts, dismiss } = useCart();
   return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-toast flex w-[min(100%-2rem,22rem)] flex-col gap-2 max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-1/2" aria-live="polite">
+    <div className="pointer-events-none fixed bottom-[calc(1rem+var(--safe-bottom))] right-4 z-toast flex w-[min(100%-2rem,22rem)] flex-col gap-2 max-sm:left-1/2 max-sm:right-auto max-sm:-translate-x-1/2" aria-live="polite">
       <AnimatePresence>
         {toasts.map((toast) => (
           <motion.button

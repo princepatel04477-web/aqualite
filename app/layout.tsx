@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 import { Grain } from "@/components/motion/Grain";
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
@@ -11,6 +11,15 @@ export const metadata: Metadata = {
   title: { default: "Aqualite", template: "%s — Aqualite" },
   description: "Light on land. At home in water. Footwear for the monsoon and the day after.",
   openGraph: { locale: "en_IN", siteName: "Aqualite", type: "website" },
+};
+
+// Mobile-first viewport. Zoom stays available (no maximum-scale /
+// user-scalable), viewport-fit=cover lets us paint into the safe areas.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#07090b",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
