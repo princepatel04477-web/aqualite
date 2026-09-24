@@ -205,6 +205,56 @@ li {
   animation-play-state: paused;
 }
 
+/* M06 · mobile home choreography ─────────────────────────────────── */
+
+/* Wet Ink mobile fallback: hero lines fade/rise 8px. CSS-only so it
+   runs pre-hydration with zero CLS and no flash; Motion owns the JS
+   lifecycle moves elsewhere on the page. */
+.hero-mline {
+  animation: aq-line-rise var(--dur-base) var(--ease-tide) both;
+}
+
+@keyframes aq-line-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Velocity band: one mobile row runs at velocity 20 and pauses while
+   the band is offscreen (IntersectionObserver sets data-paused). */
+@media (max-width: 1023px) {
+  .marquee-track {
+    --marquee-duration: 20s;
+  }
+}
+
+[data-paused="true"] .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Low tier / reduced motion render the band as one static line. */
+.marquee-static,
+.marquee-static.reverse {
+  animation: none !important;
+}
+
+/* Snap rails hide their scrollbar on phones — the progress line under
+   the rail carries position instead. */
+@media (max-width: 1023px) {
+  .rail {
+    scrollbar-width: none;
+  }
+
+  .rail::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @keyframes aq-marquee {
   from {
     transform: translateX(0);
@@ -216,6 +266,7 @@ li {
 
 @media (prefers-reduced-motion: reduce) {
   .marquee-track,
+  .hero-mline,
   .dot-pulse span,
   .spin-slow,
   .card-sheen {
@@ -225,22 +276,44 @@ li {
 }
 
 .hero-glow {
-  background: radial-gradient(ellipse at 58% 40%, rgb(var(--aqua-deep) / 0.22), transparent 42%);
+  background: radial-gradient(
+    ellipse at 58% 40%,
+    rgb(var(--aqua-deep) / 0.22),
+    transparent 42%
+  );
 }
 
 .hero-vignette {
   background:
-    linear-gradient(to top, rgb(var(--abyss)) 0%, rgb(var(--abyss) / 0.92) 22%, transparent 52%),
+    linear-gradient(
+      to top,
+      rgb(var(--abyss)) 0%,
+      rgb(var(--abyss) / 0.92) 22%,
+      transparent 52%
+    ),
     linear-gradient(to bottom, rgb(var(--abyss) / 0.8), transparent 20%);
 }
 
 .hero-shoe {
-  -webkit-mask-image: radial-gradient(ellipse 64% 54% at 50% 50%, black 42%, transparent 76%);
-  mask-image: radial-gradient(ellipse 64% 54% at 50% 50%, black 42%, transparent 76%);
+  -webkit-mask-image: radial-gradient(
+    ellipse 64% 54% at 50% 50%,
+    black 42%,
+    transparent 76%
+  );
+  mask-image: radial-gradient(
+    ellipse 64% 54% at 50% 50%,
+    black 42%,
+    transparent 76%
+  );
 }
 
 .card-sheen {
-  background: linear-gradient(115deg, transparent 36%, rgb(var(--foam) / 0.28) 50%, transparent 64%);
+  background: linear-gradient(
+    115deg,
+    transparent 36%,
+    rgb(var(--foam) / 0.28) 50%,
+    transparent 64%
+  );
   transform: translateX(-130%);
   transition: transform var(--dur-slow) var(--ease-tide);
 }

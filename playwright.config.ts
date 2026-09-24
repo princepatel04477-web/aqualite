@@ -5,23 +5,19 @@ import { MOBILE_PROJECTS } from "./tests/mobile/devices";
 /**
  * Mobile audit config. Runs the device matrix in tests/mobile against
  * BASE_URL (default the live workers.dev build; override for local).
- * Only the audit spec is picked up here; product e2e tests (when added)
- * live in their own config.
+ * Picks up the M01 audit spec and per-area acceptance specs (home since
+ * M06); product e2e tests (when added) live in their own config.
  */
 export default defineConfig({
   testDir: "./tests/mobile",
-  testMatch: /audit\.spec\.ts/,
+  testMatch: /.*\.spec\.ts/,
   timeout: 90_000,
   expect: { timeout: 10_000 },
   fullyParallel: true,
   retries: 1,
-  reporter: [
-    ["html", { open: "never" }],
-    ["list"],
-  ],
+  reporter: [["html", { open: "never" }], ["list"]],
   use: {
-    baseURL:
-      process.env.BASE_URL ?? "https://aqualite.aqualite.workers.dev",
+    baseURL: process.env.BASE_URL ?? "https://aqualite.aqualite.workers.dev",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },

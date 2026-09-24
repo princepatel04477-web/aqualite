@@ -5,9 +5,11 @@ import { Campaign } from "@/components/home/Campaign";
 import { EditRail } from "@/components/home/EditRail";
 import { HeroStage } from "@/components/home/HeroStage";
 import { ShopIndex } from "@/components/home/ShopIndex";
+import { VelocityBand } from "@/components/home/VelocityBand";
 import { CountUp } from "@/components/motion/CountUp";
 import { Reveal } from "@/components/motion/Reveal";
 import { TideIntro } from "@/components/motion/TideIntro";
+import { Button } from "@/components/ui/Button";
 import { ProductCard } from "@/components/product/ProductCard";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { Heading } from "@/components/ui/Heading";
@@ -31,7 +33,13 @@ export function HomeView({
 }) {
   const edit = [featured, ...arrivals]
     .filter((card): card is ProductCardModel => card !== null)
-    .filter((card, index, list) => list.findIndex((item) => item.slug === card.slug && item.colorwaySlug === card.colorwaySlug) === index)
+    .filter(
+      (card, index, list) =>
+        list.findIndex(
+          (item) =>
+            item.slug === card.slug && item.colorwaySlug === card.colorwaySlug,
+        ) === index,
+    )
     .slice(0, 4)
     .map((card) => ({
       href: `/product/${card.slug}?color=${card.colorwaySlug}`,
@@ -54,16 +62,45 @@ export function HomeView({
         rest={homeCopy.headlineRest}
         copy={homeCopy.lead}
         price={featured ? formatINR(featured.pricePaise) : formatINR(49900)}
-        productHref={featured ? `/product/${featured.slug}?color=${featured.colorwaySlug}` : "/product/tide-slide?color=midnight"}
+        productHref={
+          featured
+            ? `/product/${featured.slug}?color=${featured.colorwaySlug}`
+            : "/product/tide-slide?color=midnight"
+        }
         edit={edit}
       />
 
       <ShopIndex
         rows={[
-          { href: "/shop/men", label: "Men", count: counts.men, note: "Slides, clogs, flips", image: "/catalog/tide-slide-midnight.jpg" },
-          { href: "/shop/women", label: "Women", count: counts.women, note: "Slides, clogs, trainers", image: "/catalog/pearl-slide-blush.jpg" },
-          { href: "/shop/kids", label: "Kids", count: counts.kids, note: "Still being photographed", image: null, keepWhenEmpty: true },
-          { href: "/collections/everyday-slides", label: "Slides", count: counts.slides, note: "The door pair", image: "/catalog/tide-slide-sand.jpg" },
+          {
+            href: "/shop/men",
+            label: "Men",
+            count: counts.men,
+            note: "Slides, clogs, flips",
+            image: "/catalog/tide-slide-midnight.jpg",
+          },
+          {
+            href: "/shop/women",
+            label: "Women",
+            count: counts.women,
+            note: "Slides, clogs, trainers",
+            image: "/catalog/pearl-slide-blush.jpg",
+          },
+          {
+            href: "/shop/kids",
+            label: "Kids",
+            count: counts.kids,
+            note: "Still being photographed",
+            image: null,
+            keepWhenEmpty: true,
+          },
+          {
+            href: "/collections/everyday-slides",
+            label: "Slides",
+            count: counts.slides,
+            note: "The door pair",
+            image: "/catalog/tide-slide-sand.jpg",
+          },
         ]}
       />
 
@@ -77,31 +114,36 @@ export function HomeView({
               Just <em>landed</em>.
             </Heading>
           </Reveal>
-          <Link href="/collections/new-season" className="link-draw font-mono text-eyebrow uppercase">
+          <Link
+            href="/collections/new-season"
+            className="link-draw hidden font-mono text-eyebrow uppercase lg:inline-block"
+          >
             View all
           </Link>
         </div>
         <EditRail>
           {arrivals.map((card) => (
-            <div key={`${card.slug}-${card.colorwaySlug}`} className="w-[72vw] shrink-0 snap-start sm:w-[42vw] lg:w-[24vw]">
+            <div
+              key={`${card.slug}-${card.colorwaySlug}`}
+              className="w-[72vw] shrink-0 snap-start sm:w-[42vw] lg:w-[24vw]"
+            >
               <ProductCard card={card} />
             </div>
           ))}
         </EditRail>
+        {/* Mobile: "View all" becomes a full-width outline button after the rail. */}
+        <div className="page-wrap mt-5 lg:hidden">
+          <Button
+            href="/collections/new-season"
+            variant="outline"
+            className="w-full"
+          >
+            View all
+          </Button>
+        </div>
       </section>
 
-      <section className="cv-auto overflow-hidden border-y border-hairline py-8" aria-hidden="true">
-        <div className="marquee-track flex w-max gap-12 whitespace-nowrap font-display text-h1 italic text-foam/90">
-          {Array.from({ length: 2 }, (_, copy) => (
-            <span key={copy}>Walk on water — Aqualite — Walk on water — Aqualite — </span>
-          ))}
-        </div>
-        <div className="marquee-track reverse mt-3 flex w-max gap-8 whitespace-nowrap font-mono text-eyebrow uppercase text-mist">
-          {Array.from({ length: 2 }, (_, copy) => (
-            <span key={copy}>Waterproof · Featherlight · Grip that holds · Made for the monsoon · </span>
-          ))}
-        </div>
-      </section>
+      <VelocityBand />
 
       <Anatomy layers={homeCopy.anatomy} />
 
@@ -127,25 +169,41 @@ export function HomeView({
           </Reveal>
           <div className="mt-10 grid grid-cols-2 gap-gutter lg:grid-cols-4">
             {bestsellersShown.map((card, index) => (
-              <Reveal key={`${card.slug}-${card.colorwaySlug}`} delay={index * stagger.base}>
+              <Reveal
+                key={`${card.slug}-${card.colorwaySlug}`}
+                delay={index * stagger.base}
+              >
                 <ProductCard card={card} />
               </Reveal>
             ))}
+          </div>
+          {/* Mobile: "Shop all" closes the bestsellers section (M06). */}
+          <div className="mt-6 lg:hidden">
+            <Button href="/shop" variant="outline" className="w-full">
+              Shop all
+            </Button>
           </div>
         </div>
       </section>
 
       {stats.length > 0 ? (
         <section className="cv-auto border-t border-hairline">
-          <div className="page-wrap grid gap-10 py-section md:grid-cols-3">
+          <div className="page-wrap grid gap-10 py-section max-md:divide-y max-md:divide-hairline md:grid-cols-3">
             {stats.map((stat) => (
-              <div key={stat.label}>
-                <p className="font-display text-h1 tabular">
+              <div
+                key={stat.label}
+                className="max-md:py-6 max-md:first:pt-0 max-md:last:pb-0"
+              >
+                <p className="tabular font-display text-h1">
                   <CountUp value={stat.value} />
                 </p>
-                <p className="mt-2 font-mono text-eyebrow uppercase text-mist">{stat.label}</p>
+                <p className="mt-2 font-mono text-eyebrow uppercase text-mist">
+                  {stat.label}
+                </p>
                 {!isProduction && !stat.verified ? (
-                  <p className="mt-2 font-mono text-eyebrow uppercase text-sand">Unverified</p>
+                  <p className="mt-2 font-mono text-eyebrow uppercase text-sand">
+                    Unverified
+                  </p>
                 ) : null}
               </div>
             ))}
