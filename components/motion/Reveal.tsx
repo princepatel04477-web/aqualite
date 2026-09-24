@@ -37,7 +37,7 @@ export function Reveal({
         tween.kill();
       };
     },
-    { scope: ref, dependencies: [delay, reduced, revealDistance] },
+    { scope: ref, revertOnUpdate: true, dependencies: [delay, reduced, revealDistance] },
   );
 
   return (

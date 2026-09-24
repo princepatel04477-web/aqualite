@@ -18,8 +18,9 @@ export function generateStaticParams() {
   return products.map((product) => ({ slug: product.slug }));
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const data = await getProduct(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const data = await getProduct(slug);
   if (!data) return { title: "Product" };
   return {
     title: data.product.name,
@@ -31,13 +32,15 @@ export default async function ProductPage({
   params,
   searchParams,
 }: {
-  params: { slug: string };
-  searchParams: Record<string, string | string[] | undefined>;
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const data = await getProduct(params.slug);
+  const { slug } = await params;
+  const query = await searchParams;
+  const data = await getProduct(slug);
   if (!data) notFound();
-  const colorParam = typeof searchParams.color === "string" ? searchParams.color : undefined;
-  const sizeParam = typeof searchParams.size === "string" ? searchParams.size : undefined;
+  const colorParam = typeof query.color === "string" ? query.color : undefined;
+  const sizeParam = typeof query.size === "string" ? query.size : undefined;
   const colorway =
     data.product.colorways.find((item) => item.slug === colorParam) ??
     data.product.colorways.find((item) => item.variants.some((variant) => (data.stock[variant.id] ?? 0) > 0)) ??

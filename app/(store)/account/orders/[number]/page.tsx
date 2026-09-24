@@ -7,10 +7,11 @@ import { readSession } from "@/lib/auth/session";
 import { getOrderByNumber } from "@/lib/store/engine";
 import { formatINR } from "@/lib/money";
 
-export default async function AccountOrderPage({ params }: { params: { number: string } }) {
+export default async function AccountOrderPage({ params }: { params: Promise<{ number: string }> }) {
+  const { number } = await params;
   const session = await readSession();
-  if (!session) redirect(`/login?next=/account/orders/${params.number}`);
-  const order = await getOrderByNumber(decodeURIComponent(params.number));
+  if (!session) redirect(`/login?next=/account/orders/${number}`);
+  const order = await getOrderByNumber(decodeURIComponent(number));
   if (!order || order.userId !== session.id) notFound();
   const canCancel = ["pending_payment", "cod_confirmed", "paid"].includes(order.status);
   return (

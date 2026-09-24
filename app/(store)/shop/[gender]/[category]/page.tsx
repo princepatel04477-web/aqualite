@@ -14,9 +14,10 @@ export function generateStaticParams() {
   );
 }
 
-export function generateMetadata({ params }: { params: { gender: string; category: string } }): Metadata {
-  const category = categoryBySlug(params.category);
-  const gender = params.gender[0]?.toUpperCase() + params.gender.slice(1);
+export async function generateMetadata({ params }: { params: Promise<{ gender: string; category: string }> }): Promise<Metadata> {
+  const { gender: genderSlug, category: categorySlug } = await params;
+  const category = categoryBySlug(categorySlug);
+  const gender = genderSlug[0]?.toUpperCase() + genderSlug.slice(1);
   return { title: `${gender}'s ${category?.name ?? "footwear"}` };
 }
 
@@ -24,27 +25,28 @@ export default async function CategoryPage({
   params,
   searchParams,
 }: {
-  params: { gender: string; category: string };
-  searchParams: Record<string, string | string[] | undefined>;
+  params: Promise<{ gender: string; category: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  if (!GENDERS.includes(params.gender as Gender)) notFound();
-  const category = categoryBySlug(params.category);
+  const { gender, category: categorySlug } = await params;
+  if (!GENDERS.includes(gender as Gender)) notFound();
+  const category = categoryBySlug(categorySlug);
   if (!category) notFound();
-  const parsed = parseListing(searchParams);
+  const parsed = parseListing(await searchParams);
   const listing = await listProducts({
     ...parsed,
-    gender: params.gender as Gender,
+    gender: gender as Gender,
     category: category.slug,
   });
   return (
     <ListingView
-      base={`/shop/${params.gender}/${category.slug}`}
-      params={{ ...parsed, gender: params.gender as Gender, category: category.slug }}
+      base={`/shop/${gender}/${category.slug}`}
+      params={{ ...parsed, gender: gender as Gender, category: category.slug }}
       listing={listing}
       title={
         <>
-          {params.gender[0]?.toUpperCase()}
-          {params.gender.slice(1)}&apos;s <em>{category.name.toLowerCase()}</em>
+          {gender[0]?.toUpperCase()}
+          {gender.slice(1)}&apos;s <em>{category.name.toLowerCase()}</em>
         </>
       }
       intro={category.description}

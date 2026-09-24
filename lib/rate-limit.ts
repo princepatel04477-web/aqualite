@@ -16,13 +16,14 @@ async function hashIp(ip: string): Promise<string> {
     .slice(0, 20);
 }
 
-export function clientIp(): string {
-  const forwarded = headers().get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || headers().get("x-real-ip") || "local";
+export async function clientIp(): Promise<string> {
+  const requestHeaders = await headers();
+  const forwarded = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return forwarded || requestHeaders.get("x-real-ip") || "local";
 }
 
 export async function limitIp(route: string, limit: number, windowSeconds: number): Promise<boolean> {
-  const key = `ip:${route}:${await hashIp(clientIp())}`;
+  const key = `ip:${route}:${await hashIp(await clientIp())}`;
   return rateLimited(key, limit, windowSeconds);
 }
 

@@ -23,7 +23,7 @@ export function Buoyancy({ children, className }: { children: React.ReactNode; c
         ease: "sine.inOut",
       });
     },
-    { scope: ref, dependencies: [reduced, tier] },
+    { scope: ref, revertOnUpdate: true, dependencies: [reduced, tier] },
   );
 
   return (

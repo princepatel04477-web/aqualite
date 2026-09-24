@@ -1,3 +1,7 @@
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+
+initOpenNextCloudflareForDev();
+
 const isProd = process.env.NODE_ENV === "production";
 
 const csp = [
@@ -17,9 +21,6 @@ const csp = [
 const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
-  experimental: {
-    instrumentationHook: true,
-  },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
@@ -32,6 +33,20 @@ const nextConfig = {
   },
   async headers() {
     return [
+      {
+        // Hashed Next.js chunks are content-addressed — cache forever
+        source: "/_next/static/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        // Product catalog images in /public/catalog
+        source: "/catalog/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
+        ],
+      },
       {
         source: "/:path*",
         headers: [

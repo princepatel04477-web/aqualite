@@ -9,7 +9,8 @@ import type { SessionUser } from "@/lib/commerce/types";
 const NAME = "aq_session";
 
 export async function readSession(): Promise<SessionUser | null> {
-  const raw = cookies().get(NAME)?.value;
+  const jar = await cookies();
+  const raw = jar.get(NAME)?.value;
   if (!raw) return null;
   const value = await verifyValue(raw, serverEnv.SUPABASE_SERVICE_ROLE_KEY);
   if (!value) return null;
@@ -32,7 +33,8 @@ export async function readSession(): Promise<SessionUser | null> {
 
 export async function writeSession(user: SessionUser): Promise<void> {
   const signed = await signValue(JSON.stringify(user), serverEnv.SUPABASE_SERVICE_ROLE_KEY);
-  cookies().set(NAME, signed, {
+  const jar = await cookies();
+  jar.set(NAME, signed, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -41,6 +43,7 @@ export async function writeSession(user: SessionUser): Promise<void> {
   });
 }
 
-export function clearSession(): void {
-  cookies().set(NAME, "", { httpOnly: true, path: "/", maxAge: 0 });
+export async function clearSession(): Promise<void> {
+  const jar = await cookies();
+  jar.set(NAME, "", { httpOnly: true, path: "/", maxAge: 0 });
 }

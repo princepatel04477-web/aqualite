@@ -29,7 +29,7 @@ export function CountUp({ value }: { value: number }) {
         tween.kill();
       };
     },
-    { scope: ref, dependencies: [reduced, value] },
+    { scope: ref, revertOnUpdate: true, dependencies: [reduced, value] },
   );
 
   return <span ref={ref}>{shown.toLocaleString("en-IN")}</span>;

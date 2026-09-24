@@ -1,0 +1,18 @@
+# Used by Wrangler / opennextjs-cloudflare preview and deploy builds.
+# Copy to .dev.vars and fill values (same keys as .env.local).
+NEXTJS_ENV=development
+
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_ANON_KEY=placeholder-anon-key
+SUPABASE_SERVICE_ROLE_KEY=placeholder-service-role-key
+RAZORPAY_KEY_ID=placeholder-razorpay-key-id
+RAZORPAY_KEY_SECRET=placeholder-razorpay-key-secret
+RAZORPAY_WEBHOOK_SECRET=placeholder-webhook-secret
+RESEND_API_KEY=placeholder-resend
+EMAIL_FROM=Aqualite <orders@example.com>
+SITE_URL=http://localhost:3000
+
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key
+NEXT_PUBLIC_RAZORPAY_KEY_ID=placeholder-razorpay-key-id
+NEXT_PUBLIC_SITE_URL=http://localhost:3000

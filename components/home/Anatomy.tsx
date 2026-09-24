@@ -50,7 +50,7 @@ export function Anatomy({ layers }: { layers: Layer[] }) {
         triggers.forEach((trigger) => trigger.kill());
       };
     },
-    { scope: root, dependencies: [allowPinning, reduced] },
+    { scope: root, revertOnUpdate: true, dependencies: [allowPinning, reduced] },
   );
 
   return (

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 
 import { errorCopy } from "@/content/errors";
@@ -47,7 +47,7 @@ export async function stockAction(input: unknown): Promise<Result<{ available: n
   if (!parsed.success) return err("VALIDATION", errorCopy.VALIDATION);
   const adjusted = await adjustStock(parsed.data.variantId, parsed.data.delta, parsed.data.reason, parsed.data.note, `admin:${admin.id}`);
   if (!adjusted.ok) return adjusted;
-  revalidateTag("catalog");
+  updateTag("catalog");
   return ok({ available: adjusted.data.available });
 }
 

@@ -29,7 +29,7 @@ export function RiseGrid({ children, className }: { children: React.ReactNode; c
         tween.kill();
       };
     },
-    { scope: ref, dependencies: [reduced] },
+    { scope: ref, revertOnUpdate: true, dependencies: [reduced] },
   );
 
   return (

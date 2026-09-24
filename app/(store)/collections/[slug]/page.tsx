@@ -12,8 +12,9 @@ export function generateStaticParams() {
   return collections.map((collection) => ({ slug: collection.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const collection = collections.find((item) => item.slug === params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const collection = collections.find((item) => item.slug === slug);
   return { title: collection?.name ?? "Collection" };
 }
 
@@ -21,18 +22,19 @@ export default async function CollectionPage({
   params,
   searchParams,
 }: {
-  params: { slug: string };
-  searchParams: Record<string, string | string[] | undefined>;
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const collection = collections.find((item) => item.slug === params.slug);
+  const { slug } = await params;
+  const collection = collections.find((item) => item.slug === slug);
   if (!collection) notFound();
-  const parsed = parseListing(searchParams);
-  const listing = await listProducts({ ...parsed, collection: params.slug });
+  const parsed = parseListing(await searchParams);
+  const listing = await listProducts({ ...parsed, collection: slug });
   const [lead, ...rest] = collection.name.split(" ");
   return (
     <ListingView
-      base={`/collections/${params.slug}`}
-      params={{ ...parsed, collection: params.slug }}
+      base={`/collections/${slug}`}
+      params={{ ...parsed, collection: slug }}
       listing={listing}
       title={<>{lead} <em>{rest.join(" ") || "edit"}</em></>}
       intro={collection.description}

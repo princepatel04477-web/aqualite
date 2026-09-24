@@ -11,11 +11,13 @@ export default async function OrderPage({
   params,
   searchParams,
 }: {
-  params: { number: string };
-  searchParams: Record<string, string | string[] | undefined>;
+  params: Promise<{ number: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const token = typeof searchParams.t === "string" ? searchParams.t : undefined;
-  const order = await loadOrder(decodeURIComponent(params.number), token);
+  const { number } = await params;
+  const query = await searchParams;
+  const token = typeof query.t === "string" ? query.t : undefined;
+  const order = await loadOrder(decodeURIComponent(number), token);
   if (!order) notFound();
   return (
     <div className="page-wrap py-16">

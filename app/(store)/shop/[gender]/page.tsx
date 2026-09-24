@@ -12,26 +12,28 @@ export function generateStaticParams() {
   return GENDERS.filter((gender) => gender !== "unisex").map((gender) => ({ gender }));
 }
 
-export function generateMetadata({ params }: { params: { gender: string } }): Metadata {
-  const label = params.gender[0]?.toUpperCase() + params.gender.slice(1);
-  return { title: label, description: `Aqualite ${params.gender}'s footwear.` };
+export async function generateMetadata({ params }: { params: Promise<{ gender: string }> }): Promise<Metadata> {
+  const { gender } = await params;
+  const label = gender[0]?.toUpperCase() + gender.slice(1);
+  return { title: label, description: `Aqualite ${gender}'s footwear.` };
 }
 
 export default async function GenderPage({
   params,
   searchParams,
 }: {
-  params: { gender: string };
-  searchParams: Record<string, string | string[] | undefined>;
+  params: Promise<{ gender: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  if (!GENDERS.includes(params.gender as Gender) || params.gender === "unisex") notFound();
-  const parsed = parseListing(searchParams);
-  const listing = await listProducts({ ...parsed, gender: params.gender as Gender });
-  const label = params.gender[0]?.toUpperCase() + params.gender.slice(1);
+  const { gender } = await params;
+  if (!GENDERS.includes(gender as Gender) || gender === "unisex") notFound();
+  const parsed = parseListing(await searchParams);
+  const listing = await listProducts({ ...parsed, gender: gender as Gender });
+  const label = gender[0]?.toUpperCase() + gender.slice(1);
   return (
     <ListingView
-      base={`/shop/${params.gender}`}
-      params={{ ...parsed, gender: params.gender as Gender }}
+      base={`/shop/${gender}`}
+      params={{ ...parsed, gender: gender as Gender }}
       listing={listing}
       title={<>{label}&apos;s <em>edit</em></>}
     />

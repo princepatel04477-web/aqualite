@@ -50,7 +50,7 @@ export function WetInk({
         tween.scrollTrigger?.kill();
       };
     },
-    { scope: ref, dependencies: [reduced, trigger] },
+    { scope: ref, revertOnUpdate: true, dependencies: [reduced, trigger] },
   );
 
   return (

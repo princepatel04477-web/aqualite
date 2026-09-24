@@ -44,7 +44,7 @@ export function Campaign({
         tween.kill();
       };
     },
-    { scope: root, dependencies: [reduced] },
+    { scope: root, revertOnUpdate: true, dependencies: [reduced] },
   );
 
   return (

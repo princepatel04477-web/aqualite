@@ -114,7 +114,7 @@ export function HeroStage({
         if (onMove) node.removeEventListener("pointermove", onMove);
       };
     },
-    { scope: root, dependencies: [allowCursorFX, allowPinning, reduced] },
+    { scope: root, revertOnUpdate: true, dependencies: [allowCursorFX, allowPinning, reduced] },
   );
 
   return (

@@ -10,9 +10,9 @@ export const revalidate = 300;
 export default async function ShopPage({
   searchParams,
 }: {
-  searchParams: Record<string, string | string[] | undefined>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const params = parseListing(searchParams);
+  const params = parseListing(await searchParams);
   const listing = await listProducts(params);
   return (
     <ListingView

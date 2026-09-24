@@ -17,7 +17,7 @@ export function FrameIn({ children, className }: { children: React.ReactNode; cl
       if (!node || reduced) return;
       gsap.from(node, { scale: 1.06, duration: duration.cinematic, ease: gsapEase.tide });
     },
-    { scope: ref, dependencies: [reduced] },
+    { scope: ref, revertOnUpdate: true, dependencies: [reduced] },
   );
 
   return (

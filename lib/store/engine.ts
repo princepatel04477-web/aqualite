@@ -1,8 +1,5 @@
 import "server-only";
 
-import fs from "node:fs";
-import path from "node:path";
-
 import {
   products as seedProducts,
   reviews as seedReviews,
@@ -21,6 +18,7 @@ import type {
 } from "@/lib/commerce/types";
 import { err, ok, type Result } from "@/lib/result";
 import type { HeroSlideRow } from "@/lib/validation/hero";
+import { deleteStoreJson, readStoreJson, usesRemoteStore, writeStoreJson } from "@/lib/store/persist";
 import { lookupPincode } from "@/lib/store/pincode";
 import { quoteCart, COD_MAX_PAISE } from "@/lib/store/pricing";
 
@@ -118,11 +116,6 @@ type State = {
   inactiveVariants: string[];
 };
 
-const DATA_PATH = path.join(
-  process.env.AQUALITE_DATA_PATH ?? path.join(process.cwd(), ".data"),
-  "store.json",
-);
-
 const defaultSettings = (): Settings => ({
   shippingThresholdPaise: 99900,
   shippingFeePaise: 7900,
@@ -169,6 +162,8 @@ function emptyState(): State {
 
 let memory: State | null = null;
 let chain: Promise<unknown> = Promise.resolve();
+// Deduplicates concurrent load() calls within the same request/chain
+let activeLoad: Promise<State> | null = null;
 
 function seedStock(state: State): void {
   for (const product of [...seedProducts, ...state.customProducts]) {
@@ -196,37 +191,56 @@ function seedHeroSlides(state: State): void {
   });
 }
 
-function load(): State {
-  if (memory) return memory;
-  try {
-    const raw = fs.readFileSync(DATA_PATH, "utf8");
-    const parsed: unknown = JSON.parse(raw);
-    if (parsed && typeof parsed === "object") {
-      memory = { ...emptyState(), ...(parsed as State) };
+async function load(): Promise<State> {
+  // In remote mode we always re-read; in local mode memory is stable
+  const remote = await usesRemoteStore();
+  if (memory && !remote) return memory;
+
+  // Reuse an in-flight D1 read rather than issuing a second one
+  if (activeLoad) return activeLoad;
+
+  activeLoad = (async () => {
+    try {
+      const raw = await readStoreJson();
+      if (raw) {
+        const parsed: unknown = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") {
+          memory = { ...emptyState(), ...(parsed as State) };
+          seedStock(memory);
+          seedHeroSlides(memory);
+          return memory;
+        }
+      }
+    } catch {
+      memory = emptyState();
       seedStock(memory);
       seedHeroSlides(memory);
       return memory;
     }
-  } catch {
-    memory = emptyState();
-    seedStock(memory);
-    seedHeroSlides(memory);
-  }
-  return memory ?? emptyState();
+    if (!memory) {
+      memory = emptyState();
+      seedStock(memory);
+      seedHeroSlides(memory);
+    }
+    return memory;
+  })().finally(() => {
+    activeLoad = null;
+  });
+
+  return activeLoad;
 }
 
-function save(state: State): void {
+async function save(state: State): Promise<void> {
   memory = state;
-  fs.mkdirSync(path.dirname(DATA_PATH), { recursive: true });
-  fs.writeFileSync(DATA_PATH, JSON.stringify(state));
+  await writeStoreJson(JSON.stringify(state));
 }
 
 function withStore<T>(fn: (state: State) => T): Promise<T> {
-  const run = chain.then(() => {
-    const state = load();
+  const run = chain.then(async () => {
+    const state = await load();
     releaseExpiredIn(state);
     const result = fn(state);
-    save(state);
+    await save(state);
     return result;
   });
   chain = run.then(
@@ -235,6 +249,7 @@ function withStore<T>(fn: (state: State) => T): Promise<T> {
   );
   return run;
 }
+
 
 function uid(prefix: string): string {
   return `${prefix}_${crypto.randomUUID().slice(0, 8)}`;
@@ -1327,5 +1342,5 @@ export function rememberPaymentEvent(eventId: string): Promise<boolean> {
 
 export async function resetDemo(): Promise<void> {
   memory = null;
-  await fs.promises.rm(DATA_PATH, { force: true });
+  await deleteStoreJson();
 }

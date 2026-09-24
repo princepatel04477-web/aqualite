@@ -34,7 +34,7 @@ export async function verifyOtpAction(input: unknown): Promise<Result<{ next: st
 }
 
 export async function signOutAction(): Promise<void> {
-  clearSession();
+  await clearSession();
   const fresh = await createCart();
   await writeCartId(fresh);
   redirect("/");

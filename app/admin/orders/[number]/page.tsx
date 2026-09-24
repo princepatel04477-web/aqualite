@@ -5,8 +5,9 @@ import { Heading } from "@/components/ui/Heading";
 import { getOrderByNumber } from "@/lib/store/engine";
 import { formatINR } from "@/lib/money";
 
-export default async function AdminOrderPage({ params }: { params: { number: string } }) {
-  const order = await getOrderByNumber(decodeURIComponent(params.number));
+export default async function AdminOrderPage({ params }: { params: Promise<{ number: string }> }) {
+  const { number } = await params;
+  const order = await getOrderByNumber(decodeURIComponent(number));
   if (!order) notFound();
   return (
     <div>
