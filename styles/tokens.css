@@ -1,0 +1,94 @@
+:root {
+  /* Deep water — channels, not hex, so Tailwind alpha works. */
+  --abyss: 7 9 11;
+  --trench: 14 18 21;
+  --shelf: 21 26 30;
+  --hairline: 28 34 39;
+  --foam: 238 241 238;
+  --mist: 139 149 155;
+  --aqua: 79 209 197;
+  --aqua-deep: 23 102 95;
+  --sand: 203 182 142;
+  --porcelain: 233 236 234;
+  --ink-on-porcelain: 17 20 22;
+  --success: 61 214 140;
+  --warning: 242 181 68;
+  --danger: 229 72 77;
+
+  /* Product swatches — catalogue colour, not UI chrome. */
+  --swatch-midnight: 28 30 32;
+  --swatch-ink: 22 24 26;
+  --swatch-sand: 196 176 148;
+  --swatch-beige: 214 196 170;
+  --swatch-navy: 36 52 78;
+  --swatch-blue: 46 78 112;
+  --swatch-fog: 168 172 174;
+  --swatch-grey: 154 158 160;
+  --swatch-blush: 232 196 196;
+  --swatch-pink: 214 156 168;
+  --swatch-white: 244 244 242;
+  --swatch-cloud: 236 236 234;
+  --swatch-sage: 154 168 150;
+  --swatch-green: 92 122 96;
+  --swatch-olive: 107 112 78;
+  --swatch-aqua: 79 160 154;
+  --swatch-brown: 122 90 62;
+  --swatch-red: 168 72 68;
+  --swatch-multi: 79 160 154;
+
+  /* Type scale */
+  --t-hero: clamp(3.5rem, 9vw, 10rem);
+  --t-display: clamp(3.25rem, 7.4vw, 8.75rem);
+  --t-h1: clamp(2.75rem, 6vw, 6rem);
+  --t-h2: clamp(2.25rem, 4.5vw, 4.5rem);
+  --t-h3: clamp(1.5rem, 2.2vw, 2rem);
+  --t-lead: clamp(1.125rem, 1.4vw, 1.375rem);
+  --t-body: 1rem;
+  --t-small: 0.875rem;
+  --t-eyebrow: 0.6875rem;
+  --t-price: 1rem;
+  --t-size: 0.8125rem;
+  --t-button: 0.8125rem;
+  --t-logo: 1.65rem;
+  --t-mark: clamp(3.5rem, 18vw, 14rem);
+
+  /* Space */
+  --space-1: 0.25rem;
+  --space-section: clamp(6rem, 12vw, 11rem);
+  --page-pad: clamp(1.25rem, 4vw, 3.5rem);
+  --gutter: clamp(1rem, 2vw, 1.5rem);
+  --page-max: 1600px;
+
+  /* Shape */
+  --radius-panel: 2px;
+  --radius-pill: 999px;
+
+  /* Motion — the only cubic-bezier / duration source for CSS. */
+  --ease-tide: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-surface: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-drop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-instant: 0.12s;
+  --dur-quick: 0.24s;
+  --dur-base: 0.45s;
+  --dur-slow: 0.8s;
+  --dur-cinematic: 1.2s;
+
+  /* Layers */
+  --z-base: 0;
+  --z-sticky: 20;
+  --z-header: 40;
+  --z-drawer: 60;
+  --z-overlay: 70;
+  --z-modal: 80;
+  --z-toast: 90;
+  --z-preloader: 100;
+
+  --header-h: 4.5rem;
+  --header-h-compact: 3.75rem;
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --header-h: 4rem;
+  }
+}
