@@ -39,12 +39,14 @@ export function HeroStage({
   edit: HeroThumb[];
 }) {
   const root = useRef<HTMLElement>(null);
-  const { reduced, allowCursorFX, allowPinning } = useMotionPolicy();
+  const { reduced, allowCursorFX, allowPinning, tier } = useMotionPolicy();
 
   useGSAP(
     () => {
       const node = root.current;
-      if (!node || reduced) return;
+      // Desktop-only choreography (pin/scrub, cursor parallax, float, intro).
+      // On mobile/touch the hero renders calm and static — no ScrollTrigger.
+      if (!node || reduced || tier !== "high") return;
       const lines = node.querySelectorAll("[data-line]");
       const shoe = node.querySelector("[data-shoe]");
       const meta = node.querySelectorAll("[data-meta]");
@@ -121,7 +123,7 @@ export function HeroStage({
     <section
       ref={root}
       data-header="transparent"
-      className="relative -mt-[calc(var(--header-h)+2rem)] flex min-h-[100dvh] flex-col justify-end overflow-hidden bg-abyss"
+      className="relative -mt-[calc(var(--header-h)+2rem)] flex min-h-[100svh] flex-col justify-end overflow-hidden bg-abyss"
     >
       <TideField className="absolute inset-0 h-full w-full" />
       <div className="hero-glow pointer-events-none absolute inset-0" />
@@ -168,7 +170,7 @@ export function HeroStage({
           </div>
           <div data-meta className="lg:col-span-4 lg:pb-2">
             <p className="max-w-measure text-lead text-mist">{copy}</p>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+            <div className="mt-6 grid grid-cols-2 gap-3">
               <Button href="/shop/men" variant="primary">
                 Shop men
               </Button>

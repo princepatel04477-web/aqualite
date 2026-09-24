@@ -81,7 +81,7 @@ export function Footer() {
       </div>
       <div className="page-wrap flex flex-wrap items-center justify-between gap-3 border-t border-hairline py-4 font-mono text-eyebrow uppercase text-mist">
         <span>© {year} Aqualite</span>
-        <span>GSTIN {company.gstin}{company.verified ? "" : " · draft"}</span>
+        {company.verified ? <span>GSTIN {company.gstin}</span> : null}
         <span>UPI · Cards · COD</span>
       </div>
     </footer>

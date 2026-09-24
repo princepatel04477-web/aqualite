@@ -13,23 +13,27 @@ export function RollingDigits({ value }: { value: number }) {
   useEffect(() => setShown(text), [text]);
   if (reduced) return <span className="tabular">{shown}</span>;
   return (
-    <span className="inline-flex overflow-hidden tabular" aria-label={shown}>
-      {shown.split("").map((digit, index) => (
-        <span key={`${index}-${shown.length}`} className="relative inline-block h-[1.1em] w-[0.62em] overflow-hidden">
-          <motion.span
-            className="absolute left-0 top-0 flex flex-col"
-            initial={false}
-            animate={{ y: `-${Number(digit) * 10}%` }}
-            transition={spring.snappy}
-          >
-            {Array.from({ length: 10 }, (_, n) => (
-              <span key={n} className="block h-[1.1em] leading-[1.1em]">
-                {n}
-              </span>
-            ))}
-          </motion.span>
-        </span>
-      ))}
-    </span>
+    <>
+      {/* Real value for assistive tech + no-JS; the animated stack is decorative. */}
+      <span className="sr-only">{shown}</span>
+      <span aria-hidden="true" className="inline-flex overflow-hidden tabular">
+        {shown.split("").map((digit, index) => (
+          <span key={`${index}-${shown.length}`} className="relative inline-block h-[1.1em] w-[0.62em] overflow-hidden">
+            <motion.span
+              className="absolute left-0 top-0 flex flex-col"
+              initial={false}
+              animate={{ y: `-${Number(digit) * 10}%` }}
+              transition={spring.snappy}
+            >
+              {Array.from({ length: 10 }, (_, n) => (
+                <span key={n} className="block h-[1.1em] leading-[1.1em]">
+                  {n}
+                </span>
+              ))}
+            </motion.span>
+          </span>
+        ))}
+      </span>
+    </>
   );
 }

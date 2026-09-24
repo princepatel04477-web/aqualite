@@ -41,7 +41,8 @@ export function AnnouncementBar({ messages }: { messages: string[] }) {
       </AnimatePresence>
       <button
         type="button"
-        className="absolute right-3 font-mono text-eyebrow uppercase text-mist"
+        className="absolute right-1 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center font-mono text-eyebrow uppercase text-mist"
+        aria-label="Dismiss announcement"
         onClick={() => setHidden(true)}
       >
         Close

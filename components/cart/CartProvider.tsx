@@ -68,7 +68,16 @@ export function CartProvider({ initial, children }: { initial: CartSummary; chil
           return false;
         }
         setSummary(result.data);
-        window.setTimeout(() => setOpen(true), 680);
+        // On touch, don't yank the full sheet open mid-shop — confirm with a
+        // toast instead (M05). Desktop keeps the sheet-open behaviour.
+        const isTouch =
+          typeof window !== "undefined" &&
+          window.matchMedia("(pointer: coarse)").matches;
+        if (isTouch) {
+          toast("Added to bag");
+        } else {
+          window.setTimeout(() => setOpen(true), 680);
+        }
         return true;
       },
       update: async (variantId, qty) => {

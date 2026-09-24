@@ -10,7 +10,8 @@ import { useMotionPolicy } from "@/lib/motion/use-motion-policy";
 export function CountUp({ value }: { value: number }) {
   const ref = useRef<HTMLSpanElement>(null);
   const { reduced } = useMotionPolicy();
-  const [shown, setShown] = useState(reduced ? value : 0);
+  // SSR the final number so no-JS and crawlers never see "0".
+  const [shown, setShown] = useState(value);
 
   useGSAP(
     () => {
@@ -21,7 +22,12 @@ export function CountUp({ value }: { value: number }) {
         n: value,
         duration: duration.cinematic,
         ease: gsapEase.tide,
-        scrollTrigger: { trigger: node, start: "top 85%", once: true },
+        scrollTrigger: {
+          trigger: node,
+          start: "top 85%",
+          once: true,
+          onEnter: () => setShown(0),
+        },
         onUpdate: () => setShown(Math.round(proxy.n)),
       });
       return () => {

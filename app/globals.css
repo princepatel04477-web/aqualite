@@ -43,6 +43,75 @@
   textarea {
     font: inherit;
   }
+
+  /* Mobile: kill the 300ms tap delay and the blue flash on tap. */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  summary,
+  [role="button"],
+  label {
+    touch-action: manipulation;
+  }
+
+  /* iOS zooms the page when a focused input is < 16px. Pin fields on
+     phones so the keyboard never triggers a layout zoom. */
+  @media (max-width: 767px) {
+    input:not([type="button"]):not([type="submit"]):not([type="hidden"]),
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+}
+
+/* Headlines balance; long body copy wraps prettily. */
+h1,
+h2,
+h3,
+[class*="font-display"] {
+  text-wrap: balance;
+}
+
+p,
+li {
+  text-wrap: pretty;
+}
+
+/* Brief, designed tap acknowledgement on touch-only devices. */
+@media (pointer: coarse) {
+  a:active,
+  button:active,
+  [role="button"]:active {
+    transform: scale(0.97);
+  }
+}
+
+@layer components {
+  /* Safe-area helpers for fixed chrome (header top, bottom bars). */
+  .pt-safe {
+    padding-top: var(--safe-top);
+  }
+
+  .pb-safe {
+    padding-bottom: var(--safe-bottom);
+  }
+
+  .px-safe {
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+  }
+
+  .inset-safe-x {
+    left: var(--safe-left);
+    right: var(--safe-right);
+  }
 }
 
 @layer components {
@@ -199,4 +268,14 @@
 
 ::-webkit-scrollbar-track {
   background: transparent;
+}
+
+@layer utilities {
+  /* Skip rendering of below-fold sections until they approach the
+     viewport. Cuts layout/paint cost on long mobile pages. Pair with a
+     contain-intrinsic-size so the scrollbar doesn't jump. */
+  .cv-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 640px;
+  }
 }

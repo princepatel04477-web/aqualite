@@ -10,6 +10,7 @@ import { Heading } from "@/components/ui/Heading";
 import { Tag } from "@/components/ui/Tag";
 import { products } from "@/content/catalog";
 import { getProduct } from "@/lib/catalog/queries";
+import { fitLabel } from "@/lib/catalog/fit";
 import { formatINR } from "@/lib/money";
 
 export const revalidate = 300;
@@ -18,12 +19,41 @@ export function generateStaticParams() {
   return products.map((product) => ({ slug: product.slug }));
 }
 
+function firstSentence(text: string): string {
+  const parts = text.split(/(?<=[.!?])\s+/);
+  return parts[0] ?? text;
+}
+
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const data = await getProduct(params.slug);
-  if (!data) return { title: "Product" };
+  if (!data) return { title: "Product not found", description: "This product could not be found." };
+  const product = data.product;
+  const colorway = product.colorways[0];
+  const price = colorway?.variants[0];
+  const priceText = price ? ` ₹${formatINR(price.pricePaise)}` : "";
+  const description = [
+    product.subtitle,
+    product.description ? firstSentence(product.description) : "",
+    priceText,
+  ]
+    .filter((part): part is string => part.trim().length > 0)
+    .join(" ");
+  const ogImage = colorway?.images[0]?.src;
   return {
-    title: data.product.name,
-    description: data.product.subtitle,
+    title: product.name,
+    description,
+    openGraph: {
+      title: product.name,
+      description,
+      type: "website",
+      images: ogImage ? [{ url: ogImage }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.name,
+      description,
+      images: ogImage ? [ogImage] : undefined,
+    },
   };
 }
 
@@ -54,16 +84,16 @@ export default async function ProductPage({
         <div className="lg:col-span-7">
           <FrameIn className="stage aspect-[4/5] overflow-hidden">
             {primary ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={primary.src} alt={primary.alt} className="h-full w-full object-cover" />
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={primary.src} alt={primary.alt} fetchPriority="high" className="h-full w-full object-cover" />
             ) : null}
           </FrameIn>
           {colorway.images.length > 1 ? (
             <div className="mt-3 grid grid-cols-2 gap-3">
               {colorway.images.slice(1).map((image) => (
                 <div key={image.src} className="stage aspect-[4/5] overflow-hidden bg-abyss">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={image.src} alt={image.alt} className="h-full w-full object-cover" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={image.src} alt={image.alt} loading="lazy" className="h-full w-full object-cover" />
                 </div>
               ))}
             </div>
@@ -131,7 +161,8 @@ export default async function ProductPage({
               <p className="measure mt-1 text-small text-mist">{review.body}</p>
               <p className="mt-2 font-mono text-eyebrow uppercase text-mist">
                 {review.userName}
-                {review.verified ? " · Verified purchase" : ""} · {review.fit.replace("_", " ")}
+                {review.verified ? " · Verified purchase" : ""}
+                {fitLabel(review.fit) ? ` · ${fitLabel(review.fit)}` : ""}
               </p>
             </li>
           ))}

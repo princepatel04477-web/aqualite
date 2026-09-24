@@ -11,6 +11,9 @@ coverage
 *.log
 playwright-report
 test-results
+docs/mobile/results/
+docs/mobile/screens/
+.lighthouseci/
 tsconfig.tsbuildinfo
 next-env.d.ts
 .DS_Store

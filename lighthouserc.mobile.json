@@ -1,0 +1,43 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 3,
+      "settings": {
+        "preset": "mobile",
+        "formFactor": "mobile",
+        "throttlingMethod": "simulate",
+        "throttling": {
+          "cpuSlowdownMultiplier": 4,
+          "rttMs": 150,
+          "throughputKbps": 1638
+        },
+        "screenEmulation": {
+          "mobile": true,
+          "width": 360,
+          "height": 800,
+          "deviceScaleFactor": 2,
+          "disabled": false
+        },
+        "onlyCategories": ["performance"]
+      },
+      "url": [
+        "https://aqualite.aqualite.workers.dev/",
+        "https://aqualite.aqualite.workers.dev/shop/men",
+        "https://aqualite.aqualite.workers.dev/product/tide-slide?color=midnight",
+        "https://aqualite.aqualite.workers.dev/checkout"
+      ]
+    },
+    "assert": {
+      "assertions": [
+        { "audit": "performance-score", "minScore": 0.9 },
+        { "audit": "largest-contentful-paint", "maxLength": 2200 },
+        { "audit": "cumulative-layout-shift", "maxNumericValue": 0.05 },
+        { "audit": "total-blocking-time", "maxNumericValue": 200 },
+        { "audit": "interactive", "maxNumericValue": 3500 }
+      ]
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}

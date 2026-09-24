@@ -13,6 +13,8 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
 import { Heading } from "@/components/ui/Heading";
 import { homeCopy } from "@/content/site";
 import type { ProductCardModel } from "@/lib/commerce/types";
+import { excludeOverlap } from "@/lib/commerce/collections";
+import { visibleStats } from "@/lib/content/visibility";
 import { formatINR } from "@/lib/money";
 import { stagger } from "@/lib/motion/tokens";
 
@@ -38,6 +40,10 @@ export function HomeView({
       price: formatINR(card.pricePaise),
     }));
 
+  const isProduction = process.env.NODE_ENV === "production";
+  const stats = visibleStats(homeCopy.stats, isProduction);
+  const bestsellersShown = excludeOverlap(arrivals, bestsellers);
+
   return (
     <>
       <TideIntro />
@@ -56,7 +62,7 @@ export function HomeView({
         rows={[
           { href: "/shop/men", label: "Men", count: counts.men, note: "Slides, clogs, flips", image: "/catalog/tide-slide-midnight.jpg" },
           { href: "/shop/women", label: "Women", count: counts.women, note: "Slides, clogs, trainers", image: "/catalog/pearl-slide-blush.jpg" },
-          { href: "/shop/kids", label: "Kids", count: counts.kids, note: "Still being photographed", image: null },
+          { href: "/shop/kids", label: "Kids", count: counts.kids, note: "Still being photographed", image: null, keepWhenEmpty: true },
           { href: "/collections/everyday-slides", label: "Slides", count: counts.slides, note: "The door pair", image: "/catalog/tide-slide-sand.jpg" },
         ]}
       />
@@ -84,7 +90,7 @@ export function HomeView({
         </EditRail>
       </section>
 
-      <section className="overflow-hidden border-y border-hairline py-8" aria-hidden="true">
+      <section className="cv-auto overflow-hidden border-y border-hairline py-8" aria-hidden="true">
         <div className="marquee-track flex w-max gap-12 whitespace-nowrap font-display text-h1 italic text-foam/90">
           {Array.from({ length: 2 }, (_, copy) => (
             <span key={copy}>Walk on water — Aqualite — Walk on water — Aqualite — </span>
@@ -120,7 +126,7 @@ export function HomeView({
             </Heading>
           </Reveal>
           <div className="mt-10 grid grid-cols-2 gap-gutter lg:grid-cols-4">
-            {bestsellers.map((card, index) => (
+            {bestsellersShown.map((card, index) => (
               <Reveal key={`${card.slug}-${card.colorwaySlug}`} delay={index * stagger.base}>
                 <ProductCard card={card} />
               </Reveal>
@@ -129,19 +135,23 @@ export function HomeView({
         </div>
       </section>
 
-      <section className="border-t border-hairline">
-        <div className="page-wrap grid gap-10 py-section md:grid-cols-3">
-          {homeCopy.stats.map((stat) => (
-            <div key={stat.label}>
-              <p className="font-display text-h1 tabular">
-                <CountUp value={stat.value} />
-              </p>
-              <p className="mt-2 font-mono text-eyebrow uppercase text-mist">{stat.label}</p>
-              {stat.verified ? null : <p className="mt-2 font-mono text-eyebrow uppercase text-sand">Unverified</p>}
-            </div>
-          ))}
-        </div>
-      </section>
+      {stats.length > 0 ? (
+        <section className="cv-auto border-t border-hairline">
+          <div className="page-wrap grid gap-10 py-section md:grid-cols-3">
+            {stats.map((stat) => (
+              <div key={stat.label}>
+                <p className="font-display text-h1 tabular">
+                  <CountUp value={stat.value} />
+                </p>
+                <p className="mt-2 font-mono text-eyebrow uppercase text-mist">{stat.label}</p>
+                {!isProduction && !stat.verified ? (
+                  <p className="mt-2 font-mono text-eyebrow uppercase text-sand">Unverified</p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }

@@ -86,7 +86,9 @@ export function Header({
       ref={headerRef}
       className={cn(
         "z-header transition-colors duration-quick ease-tide",
-        solid || mega ? "border-b border-hairline bg-abyss/90 backdrop-blur-md" : "bg-transparent",
+        solid || mega
+          ? "border-b border-hairline bg-abyss/95 backdrop-blur-md max-md:backdrop-blur-none"
+          : "bg-transparent",
       )}
     >
       <a href="#content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-toast focus:bg-foam focus:px-3 focus:py-2 focus:text-abyss">
@@ -125,7 +127,7 @@ export function Header({
           <button type="button" className="grid h-11 w-11 place-items-center" aria-label="Search" onClick={onSearch}>
             <IconSearch />
           </button>
-          <Link href="/account" className="grid h-11 w-11 place-items-center" aria-label="Account">
+          <Link href="/account" className="hidden h-11 w-11 grid-cols-1 place-items-center lg:grid" aria-label="Account">
             <IconUser />
           </Link>
           <button

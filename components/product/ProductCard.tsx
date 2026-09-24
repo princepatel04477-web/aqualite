@@ -23,7 +23,7 @@ export function ProductCard({ card, tone = "dark" }: { card: ProductCardModel; t
       <div className="stage relative aspect-[4/5] overflow-hidden">
         <Link href={href} className="absolute inset-0 z-[1]" aria-label={`${card.name}, ${active.name}`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={active.image} alt="" className="h-full w-full object-cover transition-transform duration-slow ease-tide group-hover:scale-[1.04]" />
+          <img src={active.image} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-slow ease-tide group-hover:scale-[1.04]" />
           <span className="card-sheen pointer-events-none absolute inset-0 z-[2]" aria-hidden="true" />
         </Link>
         <div className="pointer-events-none absolute left-3 top-3 z-[2] flex flex-col gap-1">
@@ -82,7 +82,8 @@ export function ProductCard({ card, tone = "dark" }: { card: ProductCardModel; t
             <button
               key={item.slug}
               type="button"
-              aria-label={item.name}
+              aria-label={`Colour: ${item.name}`}
+              aria-pressed={item.slug === active.slug}
               className={cn("h-4 w-4 rounded-pill border", item.slug === active.slug ? "border-aqua" : "border-hairline")}
               style={{ background: `rgb(var(--swatch-${item.swatch}))` }}
               onClick={() => setColor(item.slug)}

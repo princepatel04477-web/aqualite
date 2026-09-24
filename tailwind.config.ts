@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 const color = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
 
@@ -92,7 +93,15 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Behaviour variants: hover-only reveals live behind `hoverable:` on
+    // precise pointers; touch-only affordances live behind `touch:`.
+    plugin(({ addVariant }) => {
+      addVariant("hoverable", "@media (hover: hover) and (pointer: fine)");
+      addVariant("touch", "@media (pointer: coarse)");
+      addVariant("landscape", "@media (orientation: landscape)");
+    }),
+  ],
 };
 
 export default config;

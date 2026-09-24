@@ -11,7 +11,7 @@ import { useMotionPolicy } from "@/lib/motion/use-motion-policy";
 
 export function TideIntro() {
   const root = useRef<HTMLDivElement>(null);
-  const { reduced } = useMotionPolicy();
+  const { reduced, tier } = useMotionPolicy();
   const { lock, unlock } = useLenis();
   const [live, setLive] = useState(true);
 
@@ -19,7 +19,8 @@ export function TideIntro() {
     () => {
       const node = root.current;
       if (!node) return;
-      if (reduced || window.sessionStorage.getItem("aq-intro") === "1") {
+      // Preloader is desktop-only; on touch/mobile we skip it entirely (M06).
+      if (reduced || tier !== "high" || window.sessionStorage.getItem("aq-intro") === "1") {
         markIntroDone();
         setLive(false);
         return;

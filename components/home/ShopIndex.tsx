@@ -9,6 +9,7 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
 import { gsap, ScrollTrigger } from "@/lib/motion/gsap";
 import { duration, ease, gsapEase, stagger } from "@/lib/motion/tokens";
 import { useMotionPolicy } from "@/lib/motion/use-motion-policy";
+import { visibleIndexRows } from "@/lib/content/visibility";
 
 export type IndexRow = {
   href: string;
@@ -16,6 +17,7 @@ export type IndexRow = {
   count: number;
   note: string;
   image: string | null;
+  keepWhenEmpty?: boolean;
 };
 
 export function ShopIndex({ rows }: { rows: IndexRow[] }) {
@@ -52,7 +54,8 @@ export function ShopIndex({ rows }: { rows: IndexRow[] }) {
           Shop by
         </Eyebrow>
       </div>
-      {rows.map((row, index) => (
+      {visibleIndexRows(rows).map((row, index) =>
+        row.count > 0 ? (
         <Link
           key={row.href}
           href={row.href}
@@ -78,7 +81,7 @@ export function ShopIndex({ rows }: { rows: IndexRow[] }) {
                 transition={{ duration: duration.base, ease: ease.tide }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={row.image} alt="" className="h-full w-full object-cover" />
+                <img src={row.image} alt="" loading="lazy" className="h-full w-full object-cover" />
               </motion.span>
             ) : (
               <span className="font-mono text-eyebrow uppercase text-mist group-hover:text-ink-on-porcelain/60">{row.note}</span>
@@ -88,7 +91,25 @@ export function ShopIndex({ rows }: { rows: IndexRow[] }) {
             {row.count} {row.count === 1 ? "pair" : "pairs"}
           </span>
         </Link>
-      ))}
+        ) : (
+          <div
+            key={row.href}
+            data-row
+            aria-disabled="true"
+            className="group relative grid grid-cols-12 items-end border-t border-hairline px-page py-7 text-foam last:border-b lg:py-9"
+          >
+            <span className="col-span-2 font-mono text-eyebrow text-aqua sm:col-span-1">
+              0{index + 1}
+            </span>
+            <span className="col-span-7 font-display text-h2 sm:col-span-6 lg:text-h1">
+              {row.label}
+            </span>
+            <span className="col-span-3 text-right font-mono text-size text-mist sm:col-span-2">
+              Coming soon
+            </span>
+          </div>
+        ),
+      )}
     </section>
   );
 }
