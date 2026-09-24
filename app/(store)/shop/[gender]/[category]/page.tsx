@@ -2,9 +2,14 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ListingView } from "@/components/listing/ListingView";
-import { CATEGORIES, GENDERS, categoryBySlug, type Gender } from "@/content/catalog";
+import {
+  CATEGORIES,
+  GENDERS,
+  categoryBySlug,
+  type Gender,
+} from "@/content/catalog";
 import { parseListing } from "@/lib/catalog/filters";
-import { listProducts } from "@/lib/catalog/queries";
+import { listProducts, listScope } from "@/lib/catalog/queries";
 
 export const revalidate = 300;
 
@@ -14,7 +19,11 @@ export function generateStaticParams() {
   );
 }
 
-export function generateMetadata({ params }: { params: { gender: string; category: string } }): Metadata {
+export function generateMetadata({
+  params,
+}: {
+  params: { gender: string; category: string };
+}): Metadata {
   const category = categoryBySlug(params.category);
   const gender = params.gender[0]?.toUpperCase() + params.gender.slice(1);
   return { title: `${gender}'s ${category?.name ?? "footwear"}` };
@@ -31,16 +40,34 @@ export default async function CategoryPage({
   const category = categoryBySlug(params.category);
   if (!category) notFound();
   const parsed = parseListing(searchParams);
-  const listing = await listProducts({
-    ...parsed,
-    gender: params.gender as Gender,
-    category: category.slug,
-  });
+  const [listing, scope] = await Promise.all([
+    listProducts({
+      ...parsed,
+      gender: params.gender as Gender,
+      category: category.slug,
+    }),
+    listScope({
+      ...parsed,
+      gender: params.gender as Gender,
+      category: category.slug,
+    }),
+  ]);
+  const genderLabel = params.gender[0]?.toUpperCase() + params.gender.slice(1);
   return (
     <ListingView
       base={`/shop/${params.gender}/${category.slug}`}
-      params={{ ...parsed, gender: params.gender as Gender, category: category.slug }}
+      params={{
+        ...parsed,
+        gender: params.gender as Gender,
+        category: category.slug,
+      }}
       listing={listing}
+      scope={scope}
+      crumbs={[
+        { href: "/shop", label: "Shop" },
+        { href: `/shop/${params.gender}`, label: genderLabel },
+        { label: category.name },
+      ]}
       title={
         <>
           {params.gender[0]?.toUpperCase()}

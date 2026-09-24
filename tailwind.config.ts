@@ -41,20 +41,37 @@ const config: Config = {
         mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
       fontSize: {
-        hero: ["var(--t-hero)", { lineHeight: "0.92", letterSpacing: "-0.035em" }],
-        display: ["var(--t-display)", { lineHeight: "0.9", letterSpacing: "-0.04em" }],
+        hero: [
+          "var(--t-hero)",
+          { lineHeight: "0.92", letterSpacing: "-0.035em" },
+        ],
+        display: [
+          "var(--t-display)",
+          { lineHeight: "0.9", letterSpacing: "-0.04em" },
+        ],
         h1: ["var(--t-h1)", { lineHeight: "0.95", letterSpacing: "-0.03em" }],
         h2: ["var(--t-h2)", { lineHeight: "1", letterSpacing: "-0.02em" }],
         h3: ["var(--t-h3)", { lineHeight: "1.1" }],
         lead: ["var(--t-lead)", { lineHeight: "1.5" }],
         body: ["var(--t-body)", { lineHeight: "1.6" }],
         small: ["var(--t-small)", { lineHeight: "1.5" }],
-        eyebrow: ["var(--t-eyebrow)", { lineHeight: "1.4", letterSpacing: "0.16em" }],
+        eyebrow: [
+          "var(--t-eyebrow)",
+          { lineHeight: "1.4", letterSpacing: "0.16em" },
+        ],
+        tag: ["var(--t-tag)", { lineHeight: "1.4", letterSpacing: "0.14em" }],
+        cardName: ["var(--t-card-name)", { lineHeight: "1.35" }],
         price: ["var(--t-price)", { lineHeight: "1.4" }],
         size: ["var(--t-size)", { lineHeight: "1.2" }],
-        button: ["var(--t-button)", { lineHeight: "1", letterSpacing: "0.12em" }],
+        button: [
+          "var(--t-button)",
+          { lineHeight: "1", letterSpacing: "0.12em" },
+        ],
         logo: ["var(--t-logo)", { lineHeight: "1", letterSpacing: "-0.03em" }],
-        mark: ["var(--t-mark)", { lineHeight: "0.8", letterSpacing: "-0.04em" }],
+        mark: [
+          "var(--t-mark)",
+          { lineHeight: "0.8", letterSpacing: "-0.04em" },
+        ],
       },
       maxWidth: {
         page: "var(--page-max)",

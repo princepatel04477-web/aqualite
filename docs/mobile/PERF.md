@@ -102,3 +102,44 @@ pause. `ScrollTrigger.getAll().length === 0` at 390px is asserted by
 **Remaining for a real run:** Lighthouse ≥ 90 on home (needs Chrome +
 Lighthouse CI — sandbox runs typecheck/vitest only), and a visual diff of
 desktop home ≥1024px against `main` (screenshots).
+
+## M07 — listing pages + product card on mobile (2026-09-24)
+
+Touch-native listing behaviour (desktop above 1024px unchanged — aside,
+sort links, hover zoom/sheen kept; sheen gated to `hoverable:`):
+
+- **Card.** Quick-add "+" is always visible (40px visual in a 44px hit)
+  and opens a size bottom sheet (`QuickAddSheet` via shared `Sheet`):
+  thumb + name + server-owned price, 4-up 48px size pills with sold-out
+  struck, primary "Add to bag" — adding closes the sheet and the M05
+  toast confirms. Colour dots: 20px swatch in a 44px hit, max 3 + "+N"
+  (`swatchDots`), tap swaps the image in place. Save heart (44px) tops
+  the stage, persisted locally (`useWishlist`, reconcilable with the
+  account wishlist later). Text block stacks on touch: 15px 2-line-clamp
+  name (`--t-card-name`), mono meta, price row with MRP struck + % off.
+  Tags sized `--t-tag` (10px phones), corner-parked.
+- **Grid.** 2 columns, `--gutter` 12px on phones, `--page-pad` 16px
+  (<768px). Reflow on touch is CSS fade-only (`.rise-grid > *` +
+  `aq-fade-in`); desktop keeps the GSAP rise (RiseGrid gated to
+  desktop pointers — zero ScrollTriggers on phones).
+- **Loading.** "Load more" is now local pagination (`ListingGrid`
+  re-runs the server's pure `applyListing` over the route scope): an
+  IntersectionObserver 600px before the end appends pages instantly —
+  no fetch, no skeleton phase, fixed-aspect tiles ⇒ CLS ≈ 0. The button
+  remains as the accessible fallback. Pages + scroll offset persist to
+  the history entry (`aqPages`/`aqScrollY`/`aqHref`); back from a PDP
+  restores both before paint (deep links with `?page=N` still open
+  there). Demo catalog is one page (~24 pairs) — the multi-page path
+  engages as the catalog grows.
+- **Sheets.** Sticky 48px "Filter · Sort" bar sticks below the header
+  and lifts to the top edge when the header hides (IntersectionObserver
+  on the header element). Filter sheet: Size/Colour/Price accordions,
+  48px pills, live exact counts from `applyListing`, sticky footer
+  "Clear" + "Show N pairs" above the safe area; applies via
+  `router.push(scroll:false)` so filter URLs stay shareable. Sort is a
+  small radio-row sheet applying immediately.
+- **Header block.** Single-line breadcrumb (truncating), H1 + live
+  count, category chips in a fading snap rail (44px chips).
+- Payload note: the route scope (all cards of the route, prices
+  included, server-fetched) serialises once to `ListingGrid` so
+  pagination and counts never need a client fetch.
