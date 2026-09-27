@@ -8,7 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import sharp from "sharp";
+import sharp, { type OverlayOptions } from "sharp";
 
 import { ROOT } from "./hero-lib.ts";
 
@@ -30,7 +30,7 @@ const rows = Math.ceil(SCENES.length / COLS);
 const sheetW = PAD + COLS * (PANEL_W + PAD);
 const sheetH = PAD + rows * (LABEL_H + PANEL_H + PAD);
 
-const composites: sharp.OverlayOptions[] = [];
+const composites: OverlayOptions[] = [];
 for (const [index, scene] of SCENES.entries()) {
   const col = index % COLS;
   const row = Math.floor(index / COLS);

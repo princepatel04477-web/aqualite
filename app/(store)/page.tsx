@@ -7,22 +7,24 @@ import { allCards, getFeatured } from "@/lib/catalog/queries";
 export const revalidate = 300;
 
 /** H06: phones get the stacked mobile hero straight from the server. */
-function initialMobileFromUA(): boolean {
-  const ua = headers().get("user-agent") ?? "";
+async function initialMobileFromUA(): Promise<boolean> {
+  const h = await headers();
+  const ua = h.get("user-agent") ?? "";
   return /Android|iPhone|iPad|iPod|IEMobile|BlackBerry|Silk|Mobile/i.test(ua);
 }
 
 export default async function HomePage() {
-  const [arrivals, bestsellers, featuredList, cards, heroSlides] = await Promise.all([
+  const [arrivals, bestsellers, featuredList, cards, heroSlides, initialMobile] = await Promise.all([
     getFeatured("new"),
     getFeatured("bestsellers"),
     getFeatured("featured"),
     allCards(),
     getHeroSlides(),
+    initialMobileFromUA(),
   ]);
   return (
     <HomeView
-      initialMobile={initialMobileFromUA()}
+      initialMobile={initialMobile}
       heroSlides={heroSlides}
       arrivals={arrivals}
       bestsellers={bestsellers}

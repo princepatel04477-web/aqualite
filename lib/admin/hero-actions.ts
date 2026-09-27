@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 
 import { errorCopy } from "@/content/errors";
@@ -65,7 +65,7 @@ export async function saveHeroSlideAction(input: unknown): Promise<Result<{ id: 
   );
   if (!saved.ok) return saved;
 
-  revalidateTag("hero");
+  updateTag("hero");
   revalidatePath("/");
   revalidatePath("/admin/hero");
   return ok({ id: saved.data.id });
@@ -79,7 +79,7 @@ export async function reorderHeroSlidesAction(input: unknown): Promise<Result<{ 
   if (!parsed.success) return err("VALIDATION", firstIssueMessage(parsed.error));
   const moved = await reorderHeroSlides(parsed.data, `admin:${admin.id}`);
   if (!moved.ok) return moved;
-  revalidateTag("hero");
+  updateTag("hero");
   revalidatePath("/");
   revalidatePath("/admin/hero");
   return ok({ saved: true });
