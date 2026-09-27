@@ -12,16 +12,18 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { Heading } from "@/components/ui/Heading";
 import { homeCopy } from "@/content/site";
-import type { ProductCardModel } from "@/lib/commerce/types";
+import type { HeroSlide, ProductCardModel } from "@/lib/commerce/types";
 import { formatINR } from "@/lib/money";
 import { stagger } from "@/lib/motion/tokens";
 
 export function HomeView({
+  hero,
   arrivals,
   bestsellers,
   featured,
   counts,
 }: {
+  hero: HeroSlide | null;
   arrivals: ProductCardModel[];
   bestsellers: ProductCardModel[];
   featured: ProductCardModel | null;
@@ -42,13 +44,19 @@ export function HomeView({
     <>
       <TideIntro />
       <HeroStage
-        eyebrow={homeCopy.eyebrow}
-        lead={homeCopy.headlineLead}
-        emphasis={homeCopy.headlineEm}
-        rest={homeCopy.headlineRest}
-        copy={homeCopy.lead}
-        price={featured ? formatINR(featured.pricePaise) : formatINR(49900)}
-        productHref={featured ? `/product/${featured.slug}?color=${featured.colorwaySlug}` : "/product/tide-slide?color=midnight"}
+        eyebrow={hero?.eyebrow ?? homeCopy.eyebrow}
+        lead={hero?.headline.before ?? homeCopy.headlineLead}
+        emphasis={hero?.headline.italic ?? homeCopy.headlineEm}
+        rest={hero?.headline.after ?? homeCopy.headlineRest}
+        copy={hero?.lead ?? homeCopy.lead}
+        price={hero ? formatINR(hero.product.pricePaise) : formatINR(featured?.pricePaise ?? 49900)}
+        productHref={
+          hero
+            ? `/product/${hero.product.slug}?color=${hero.product.colorwaySlug}`
+            : featured
+              ? `/product/${featured.slug}?color=${featured.colorwaySlug}`
+              : "/product/tide-slide?color=midnight"
+        }
         edit={edit}
       />
 

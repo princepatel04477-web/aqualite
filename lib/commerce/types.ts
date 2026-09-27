@@ -179,3 +179,32 @@ export type SessionUser = {
   fullName: string;
   phone: string;
 };
+
+/** One hero scene as rendered on the home showcase (joined, typed, server-built). */
+export type HeroSlide = {
+  id: string;
+  sort: number;
+  eyebrow: string;
+  headline: { before: string; italic: string; after: string };
+  lead: string;
+  glowHex: string;
+  imageDesktopPath: string;
+  imageMobilePath: string;
+  imageAlt: string;
+  focal: { x: number; y: number };
+  shoeMaskPath: string | null;
+  ctaPrimary: { label: string; href: string };
+  ctaSecondary: { label: string; href: string };
+  product: {
+    id: string;
+    slug: string;
+    name: string;
+    colorwayId: string;
+    colorwaySlug: string;
+    colorwayName: string;
+    pricePaise: number;
+    mrpPaise: number;
+    thumbnail: string;
+    inStock: boolean;
+  };
+};

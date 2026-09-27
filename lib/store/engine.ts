@@ -10,6 +10,7 @@ import {
   type CatalogVariant,
 } from "@/content/catalog";
 import { errorCopy } from "@/content/errors";
+import { heroSeed } from "@/content/hero";
 import type {
   Address,
   CartSummary,
@@ -19,6 +20,7 @@ import type {
   SessionUser,
 } from "@/lib/commerce/types";
 import { err, ok, type Result } from "@/lib/result";
+import type { HeroSlideRow } from "@/lib/validation/hero";
 import { lookupPincode } from "@/lib/store/pincode";
 import { quoteCart, COD_MAX_PAISE } from "@/lib/store/pricing";
 
@@ -111,6 +113,7 @@ type State = {
   payments: { id: string; orderId: string; providerPaymentId: string | null; amountPaise: number; status: string; at: string }[];
   paymentEvents: string[];
   customProducts: CatalogProduct[];
+  heroSlides: HeroSlideRow[];
   settings: Settings;
   inactiveVariants: string[];
 };
@@ -155,6 +158,7 @@ function emptyState(): State {
     payments: [],
     paymentEvents: [],
     customProducts: [],
+    heroSlides: [],
     settings: defaultSettings(),
     inactiveVariants: [],
   };
@@ -175,6 +179,20 @@ function seedStock(state: State): void {
   }
 }
 
+/** Draft hero rows from content/hero.ts, loaded once into a fresh store. */
+function seedHeroSlides(state: State): void {
+  if (state.heroSlides.length > 0) return;
+  heroSeed.forEach((seed, index) => {
+    const { key, ...rest } = seed;
+    state.heroSlides.push({
+      ...rest,
+      id: `hs_${key}`,
+      sort: (index + 1) * 10,
+      updatedAt: nowIso(),
+    });
+  });
+}
+
 function load(): State {
   if (memory) return memory;
   try {
@@ -183,11 +201,13 @@ function load(): State {
     if (parsed && typeof parsed === "object") {
       memory = { ...emptyState(), ...(parsed as State) };
       seedStock(memory);
+      seedHeroSlides(memory);
       return memory;
     }
   } catch {
     memory = emptyState();
     seedStock(memory);
+    seedHeroSlides(memory);
   }
   return memory ?? emptyState();
 }
@@ -921,6 +941,85 @@ export function availabilityMap(ids: string[]): Promise<Record<string, number>> 
       out[id] = available(state, id);
     });
     return out;
+  });
+}
+
+export function getHeroSlideRows(): Promise<HeroSlideRow[]> {
+  return withStore((state) => [...state.heroSlides].sort((a, b) => a.sort - b.sort));
+}
+
+function auditHero(state: State, actor: string, action: string, row: HeroSlideRow, diff: Record<string, unknown>): void {
+  state.audit.push({
+    id: uid("aud"),
+    actorId: actor,
+    action,
+    entity: "hero_slide",
+    entityId: row.id,
+    diff,
+    at: nowIso(),
+  });
+}
+
+export function saveHeroSlide(
+  input: Omit<HeroSlideRow, "sort" | "updatedAt">,
+  actor: string,
+): Promise<Result<HeroSlideRow>> {
+  return withStore((state) => {
+    const product = allProducts(state).find((item) => item.id === input.productId);
+    if (!product) return err("VALIDATION", "That product does not exist.");
+    if (!product.isActive) return err("VALIDATION", "That product is not active.");
+    const colorway = product.colorways.find((item) => item.id === input.colorwayId);
+    if (!colorway) return err("VALIDATION", "That colourway does not belong to the product.");
+
+    const existing = input.id ? state.heroSlides.find((row) => row.id === input.id) : undefined;
+    if (input.id && !existing) return err("NOT_FOUND", "That hero slide no longer exists.");
+
+    const otherActive = state.heroSlides.filter((row) => row.isActive && row.id !== input.id).length;
+    if (input.isActive && otherActive >= 6) {
+      return err("VALIDATION", "At most six hero slides can be active. Deactivate one first.");
+    }
+
+    if (existing) {
+      const updated: HeroSlideRow = {
+        ...existing,
+        ...input,
+        id: existing.id,
+        sort: existing.sort,
+        updatedAt: nowIso(),
+      };
+      state.heroSlides[state.heroSlides.indexOf(existing)] = updated;
+      auditHero(state, actor, "update_hero_slide", updated, { glowHex: updated.glowHex, isActive: updated.isActive });
+      return ok(updated);
+    }
+
+    const maxSort = state.heroSlides.reduce((max, row) => Math.max(max, row.sort), 0);
+    const row: HeroSlideRow = { ...input, id: uid("hs"), sort: maxSort + 10, updatedAt: nowIso() };
+    state.heroSlides.push(row);
+    auditHero(state, actor, "create_hero_slide", row, { productId: row.productId });
+    return ok(row);
+  });
+}
+
+export function reorderHeroSlides(ids: string[], actor: string): Promise<Result<HeroSlideRow[]>> {
+  return withStore((state) => {
+    if (ids.length !== state.heroSlides.length) {
+      return err("VALIDATION", "A reorder must include every hero slide.");
+    }
+    const byId = new Map(state.heroSlides.map((row) => [row.id, row]));
+    if (ids.some((id) => !byId.has(id))) {
+      return err("VALIDATION", "Reorder received an unknown hero slide.");
+    }
+    ids.forEach((id, index) => {
+      const row = byId.get(id);
+      if (row) row.sort = (index + 1) * 10;
+    });
+    const ordered = [...state.heroSlides].sort((a, b) => a.sort - b.sort);
+    ordered.forEach((row) => {
+      row.updatedAt = nowIso();
+    });
+    const first = ordered[0];
+    if (first) auditHero(state, actor, "reorder_hero_slides", first, { ids });
+    return ok(ordered);
   });
 }
 
