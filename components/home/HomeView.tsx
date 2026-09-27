@@ -45,7 +45,7 @@ export function HomeView({
     <>
       <TideIntro />
       {heroSlides.length > 0 ? (
-        <HeroShowcase slides={heroSlides} edit={edit} />
+        <HeroShowcase slides={heroSlides} />
       ) : (
         <HeroStage
           eyebrow={homeCopy.eyebrow}

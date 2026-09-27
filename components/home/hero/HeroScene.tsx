@@ -4,7 +4,7 @@ import { heroImage } from "@/lib/catalog/hero-image";
 import type { HeroSlide } from "@/lib/commerce/types";
 import { cn } from "@/lib/cn";
 
-import { Button } from "@/components/ui/Button";
+import { HeroCtas, type HeroCtaPair } from "@/components/home/hero/HeroCtas";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 
 function pad(index: number): string {
@@ -99,11 +99,13 @@ export function HeroSceneContent({
   slide,
   index,
   count,
+  pairs,
   active,
 }: {
   slide: HeroSlide;
   index: number;
   count: number;
+  pairs: HeroCtaPair[];
   active: boolean;
 }) {
   return (
@@ -139,17 +141,17 @@ export function HeroSceneContent({
         </h2>
       </div>
       <div data-meta className="lg:col-span-4 lg:pb-2">
-        <p data-hero-lead className="max-w-measure text-lead text-mist">
+        <p data-hero-lead className="max-w-[34ch] text-lead text-mist xl:max-w-measure">
           {slide.lead}
         </p>
-        <div data-hero-ctas className="mt-6 flex flex-wrap items-center gap-3">
-          <Button href={slide.ctaPrimary.href} variant="primary" tabIndex={active ? undefined : -1}>
-            {slide.ctaPrimary.label}
-          </Button>
-          <Button href={slide.ctaSecondary.href} variant="outline" tabIndex={active ? undefined : -1}>
-            {slide.ctaSecondary.label}
-          </Button>
-        </div>
+        <HeroCtas
+          pairs={pairs}
+          primary={slide.ctaPrimary.label}
+          secondary={slide.ctaSecondary.label}
+          primaryHref={slide.ctaPrimary.href}
+          secondaryHref={slide.ctaSecondary.href}
+          active={active}
+        />
       </div>
     </div>
   );

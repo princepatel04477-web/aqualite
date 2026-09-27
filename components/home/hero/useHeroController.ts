@@ -69,6 +69,8 @@ export function useHeroController(slides: { id: string; product: { name: string;
       setActiveIndex(step.to);
       setIsTransitioning(true);
       setLastStep(step);
+      progressRef.current = 0;
+      for (const listener of progressListeners.current) listener(0);
       setMountedImages((current) => {
         if (current.has(step.to)) return current;
         const next = new Set(current);
@@ -206,10 +208,8 @@ export function useHeroController(slides: { id: string; product: { name: string;
       last = time;
       machine.tick();
       if (!machine.canAutoplay()) {
-        if (progressRef.current !== 0) {
-          progressRef.current = 0;
-          for (const listener of progressListeners.current) listener(0);
-        }
+        // Frozen, not reset: resume continues from the same point.
+        last = time;
         return;
       }
       const next = progressRef.current + delta / HERO_AUTOPLAY_MS;

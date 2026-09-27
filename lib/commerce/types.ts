@@ -206,5 +206,7 @@ export type HeroSlide = {
     mrpPaise: number;
     thumbnail: string;
     inStock: boolean;
+    /** Per-variant availability for the hero quick-add popover. */
+    sizes: { variantId: string; sizeUk: number; label: string; available: number }[];
   };
 };

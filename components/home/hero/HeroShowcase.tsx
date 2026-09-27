@@ -1,23 +1,23 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef } from "react";
-import { AnimatePresence, motion } from "motion/react";
 import { useGSAP } from "@gsap/react";
 
 import { createSceneTransition } from "@/components/home/hero/transitions/createSceneTransition";
 import { WaveClipDef } from "@/components/home/hero/transitions/waveWipe";
+import { HeroCounter } from "@/components/home/hero/HeroCounter";
+import { type HeroCtaPair } from "@/components/home/hero/HeroCtas";
 import { HeroLiveRegion } from "@/components/home/hero/HeroLiveRegion";
+import { HeroPriceBlock } from "@/components/home/hero/HeroPriceBlock";
 import { HeroSceneBackdrop, HeroSceneContent } from "@/components/home/hero/HeroScene";
+import { HeroThumbRail } from "@/components/home/hero/HeroThumbRail";
 import { useHeroController } from "@/components/home/hero/useHeroController";
 import { TideField } from "@/components/motion/TideField";
-import { RollingDigits } from "@/components/motion/RollingDigits";
 import type { HeroSlide } from "@/lib/commerce/types";
 import { gsap } from "@/lib/motion/gsap";
 import { whenIntroDone } from "@/lib/motion/intro";
-import { duration, ease, gsapEase, stagger } from "@/lib/motion/tokens";
+import { duration, gsapEase, stagger } from "@/lib/motion/tokens";
 import { useMotionPolicy } from "@/lib/motion/use-motion-policy";
-import { cn } from "@/lib/cn";
 
 /**
  * The n-piece hero showcase: server-renders slide 01 exactly like the
@@ -26,13 +26,7 @@ import { cn } from "@/lib/cn";
  * Scene changes run the H04 GSAP timeline; the price block swaps with
  * Motion presence per the animation-ownership table.
  */
-export function HeroShowcase({
-  slides,
-  edit,
-}: {
-  slides: HeroSlide[];
-  edit: { href: string; name: string; image: string; price: string }[];
-}) {
+export function HeroShowcase({ slides }: { slides: HeroSlide[] }) {
   const root = useRef<HTMLElement>(null);
   const { allowCursorFX, allowPinning, reduced, tier } = useMotionPolicy();
   const hero = useHeroController(slides);
@@ -196,10 +190,14 @@ export function HeroShowcase({
     { scope: root, dependencies: [allowCursorFX, allowPinning, reduced, slides.length] },
   );
 
+  const ctaPairs: HeroCtaPair[] = slides.map((slide) => ({
+    primary: slide.ctaPrimary.label,
+    secondary: slide.ctaSecondary.label,
+  }));
   if (slides.length === 0) return null;
   const active = slides[hero.activeIndex] ?? slides[0];
   if (!active) return null;
-  const productHref = `/product/${active.product.slug}?color=${active.product.colorwaySlug}`;
+  void active;
 
   return (
     <section
@@ -242,69 +240,29 @@ export function HeroShowcase({
               slide={slide}
               index={index}
               count={slides.length}
+              pairs={ctaPairs}
               active={index === hero.activeIndex}
             />
           ))}
         </div>
 
-        <div data-hero-band className="mt-8 flex flex-col gap-6 border-t border-hairline pt-5 sm:flex-row sm:items-end sm:justify-between">
-          <Link href={productHref} data-meta className="group">
-            <p className="font-mono text-eyebrow uppercase text-aqua">
-              <span className="block overflow-hidden">
-                <AnimatePresence mode="popLayout" initial={false}>
-                  <motion.span
-                    key={active.product.name}
-                    initial={{ y: "110%" }}
-                    animate={{ y: "0%" }}
-                    exit={{ y: "-110%" }}
-                    transition={{ duration: duration.base, ease: ease.tide }}
-                    className="block"
-                  >
-                    {active.product.name}
-                  </motion.span>
-                </AnimatePresence>
-              </span>
-            </p>
-            <p className="mt-1 font-body text-h3 tabular text-foam transition-colors duration-quick ease-tide group-hover:text-sand">
-              ₹<RollingDigits value={Math.round(active.product.pricePaise / 100)} />
-            </p>
-          </Link>
-          <ul data-meta className="flex gap-3">
-            {edit.map((item) => (
-              <li key={item.href}>
-                <Link href={item.href} className="group block w-16 sm:w-20">
-                  <span className="stage block aspect-[4/5] overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={item.image}
-                      alt=""
-                      className="h-full w-full object-cover transition-transform duration-slow ease-tide group-hover:scale-105"
-                    />
-                  </span>
-                  <span className="mt-2 block truncate font-mono text-eyebrow uppercase text-mist group-hover:text-foam">
-                    {item.name}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <div data-meta className="flex items-center gap-4 font-mono text-eyebrow uppercase text-mist">
-            <button
-              type="button"
-              onClick={hero.togglePlay}
-              aria-pressed={hero.playPaused}
-              aria-label={hero.playPaused ? "Play autoplay" : "Pause autoplay"}
-              className={cn(
-                "-my-3 min-h-11 min-w-11 px-2 font-mono text-eyebrow uppercase transition-colors duration-quick ease-tide",
-                hero.playPaused ? "text-aqua" : "text-mist hover:text-foam",
-              )}
-            >
-              {hero.playPaused ? "Play" : "Pause"}
-            </button>
-            <span className="hidden sm:inline">Scroll</span>
-            <span className="relative hidden h-12 w-px overflow-hidden bg-hairline sm:block">
-              <span data-scroll-line className="absolute inset-x-0 top-0 h-1/2 bg-aqua" />
-            </span>
+        <div data-hero-band className="mt-8 grid grid-cols-2 items-end gap-6 border-t border-hairline pt-5 lg:grid-cols-[auto_1fr_auto]">
+          <HeroPriceBlock slide={active} />
+          <div className="col-span-2 order-3 lg:order-none lg:col-span-1 flex lg:justify-center">
+            <HeroThumbRail
+              slides={slides}
+              activeIndex={hero.activeIndex}
+              onSelect={hero.goTo}
+              onProgress={hero.onProgress}
+            />
+          </div>
+          <div className="justify-self-end">
+            <HeroCounter
+              activeIndex={hero.activeIndex}
+              count={slides.length}
+              playPaused={hero.playPaused}
+              onTogglePlay={hero.togglePlay}
+            />
           </div>
         </div>
       </div>

@@ -61,6 +61,12 @@ async function loadHeroSlides(): Promise<HeroSlide[]> {
         mrpPaise: cheapest.mrpPaise,
         thumbnail: colorway.images[0]?.src ?? "",
         inStock: true,
+        sizes: colorway.variants.map((variant) => ({
+          variantId: variant.id,
+          sizeUk: variant.sizeUk,
+          label: variant.label,
+          available: stock[variant.id] ?? 0,
+        })),
       },
     };
     return [slide];

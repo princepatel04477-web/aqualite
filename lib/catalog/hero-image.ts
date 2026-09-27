@@ -52,3 +52,12 @@ export function heroImage(desktopPath: string, mobilePath: string, kind: "deskto
     quality: "raw",
   };
 }
+
+/** Warms the browser cache for a slide's desktop hero (hover preload, H05). */
+export function preloadHeroImage(desktopPath: string, mobilePath: string): void {
+  const spec = heroImage(desktopPath, mobilePath, "desktop");
+  const src = spec.fallback ?? desktopPath;
+  if (typeof window === "undefined" || !src) return;
+  const image = new Image();
+  image.src = src;
+}
