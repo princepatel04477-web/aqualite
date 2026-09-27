@@ -1,0 +1,275 @@
+{
+  "generatedAt": "2026-09-27T07:21:17.520Z",
+  "entries": {
+    "/catalog/hero-tide-slide.jpg": {
+      "base": "/catalog/hero/tide-slide/hero-desktop",
+      "quality": "render",
+      "widths": [
+        828,
+        1280,
+        1920
+      ],
+      "formats": [
+        "avif",
+        "webp"
+      ],
+      "fallback": "/catalog/hero/tide-slide/hero-desktop-1920.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRloAAABXRUJQVlA4IE4AAACQAwCdASoYABAAPu1mq04ppaQiMAgBMB2JZwAAW+pdIWSg91QAAP70It7kDzDSkYiy126bUfZy2XcuY6wm+rmi/NWZvYIJBCsZDV2AAAA=",
+      "aspect": 1.5,
+      "glowHex": "#57B3BA",
+      "bytes": {
+        "avif:828": 8285,
+        "webp:828": 9276,
+        "avif:1280": 21766,
+        "webp:1280": 23302,
+        "avif:1920": 36888,
+        "webp:1920": 40282,
+        "jpg:1920": 64810
+      },
+      "withinBudget": true
+    },
+    "/catalog/hero/tide-slide/hero-mobile": {
+      "base": "/catalog/hero/tide-slide/hero-mobile",
+      "quality": "render",
+      "widths": [
+        480,
+        828,
+        1080
+      ],
+      "formats": [
+        "avif",
+        "webp"
+      ],
+      "fallback": "/catalog/hero/tide-slide/hero-mobile-1080.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRnQAAABXRUJQVlA4IGgAAAAwBACdASoYAB4APuFWpk2opCOiN/qoARAcCUAAC3Z+LtcKGx/U4dI1gRgA/vQdWjBqdPX4aFV2Bsr7kaC09XbiWxLk9CbnuQ1PWI+mKoSyXYNDQCZw8WUpjvjCFwtPPGv0V4cy8GsAAA==",
+      "aspect": 0.8055555555555556,
+      "glowHex": "#57B3BA",
+      "bytes": {
+        "avif:480": 3616,
+        "webp:480": 4402,
+        "avif:828": 7938,
+        "webp:828": 10590,
+        "avif:1080": 11035,
+        "webp:1080": 14878,
+        "jpg:1080": 29904
+      },
+      "withinBudget": true
+    },
+    "/catalog/hero/pearl-slide/hero-desktop": {
+      "base": "/catalog/hero/pearl-slide/hero-desktop",
+      "quality": "render",
+      "widths": [
+        828,
+        1280,
+        1920
+      ],
+      "formats": [
+        "avif",
+        "webp"
+      ],
+      "fallback": "/catalog/hero/pearl-slide/hero-desktop-1920.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRnQAAABXRUJQVlA4IGgAAADwAwCdASoYAA0APu1kqU2ppaQiMAgBMB2JYgCsAGlgCFowNxhEY9WgAP79m5i57Smm8XaadbPQODVJrPhxtCL3gP1GfMRxTzjUFlipyH0ekSDMe0+S2muNf5scTSsgu04UKGaejh4oAA==",
+      "aspect": 1.7916666666666667,
+      "glowHex": "#CF918E",
+      "bytes": {
+        "avif:828": 3998,
+        "webp:828": 4972,
+        "avif:1280": 7354,
+        "webp:1280": 9724,
+        "avif:1920": 12562,
+        "webp:1920": 17904,
+        "jpg:1920": 38734
+      },
+      "withinBudget": true
+    },
+    "/catalog/hero/pearl-slide/hero-mobile": {
+      "base": "/catalog/hero/pearl-slide/hero-mobile",
+      "quality": "render",
+      "widths": [
+        480,
+        828,
+        1080
+      ],
+      "formats": [
+        "avif",
+        "webp"
+      ],
+      "fallback": "/catalog/hero/pearl-slide/hero-mobile-1080.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRnIAAABXRUJQVlA4IGYAAAAQBQCdASoYAB4APu1mqU4ppaOiMAgBMB2JZgCsACHfx4D/TpXpqCLn3J8esa899tTAAP7wvLM3aOXLlLy1sS5BWGcJJv+QYtC1sPEiVtQ9jxV8W9X8NJjEATfrmebdTnFwtgi5QAA=",
+      "aspect": 0.8055555555555556,
+      "glowHex": "#CF918E",
+      "bytes": {
+        "avif:480": 2875,
+        "webp:480": 3578,
+        "avif:828": 5642,
+        "webp:828": 7954,
+        "avif:1080": 8266,
+        "webp:1080": 11434,
+        "jpg:1080": 25729
+      },
+      "withinBudget": true
+    },
+    "/catalog/hero/cove-clog/hero-desktop": {
+      "base": "/catalog/hero/cove-clog/hero-desktop",
+      "quality": "render",
+      "widths": [
+        828,
+        1280,
+        1920
+      ],
+      "formats": [
+        "avif",
+        "webp"
+      ],
+      "fallback": "/catalog/hero/cove-clog/hero-desktop-1920.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRmwAAABXRUJQVlA4IGAAAACwAwCdASoYAA0APu1orU2ppqSiMAgBMB2JZQC7AGk8E6a+v4dGfAD+/hTWuZfV75WjZ+wX/q2WisgJto6SJc3muU1ZSWtka8mHOBCZEXhuHH9yO0Yk1IkaCpAjXHgAAAA=",
+      "aspect": 1.7916666666666667,
+      "glowHex": "#829481",
+      "bytes": {
+        "avif:828": 8316,
+        "webp:828": 9282,
+        "avif:1280": 14850,
+        "webp:1280": 17848,
+        "avif:1920": 22266,
+        "webp:1920": 28176,
+        "jpg:1920": 54163
+      },
+      "withinBudget": true
+    },
+    "/catalog/hero/cove-clog/hero-mobile": {
+      "base": "/catalog/hero/cove-clog/hero-mobile",
+      "quality": "render",
+      "widths": [
+        480,
+        828,
+        1080
+      ],
+      "formats": [
+        "avif",
+        "webp"
+      ],
+      "fallback": "/catalog/hero/cove-clog/hero-mobile-1080.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRo4AAABXRUJQVlA4IIIAAAAwBQCdASoYAB4APuFWpk2opKOiN/qoARAcCWUAuwAh3+b0LLpBdV6cbEO0ybFd0iyAAAD+9CN8U6R0xINFXcygjkutAH4fJ2ySLnOFBy6nrRmkykC/NjqRaw2OrLFSZIVmPuZHR/XKoXShfaNYiDruEKzTAuW7WQ0ZPuV8zt41wAAA",
+      "aspect": 0.8055555555555556,
+      "glowHex": "#829481",
+      "bytes": {
+        "avif:480": 7232,
+        "webp:480": 7854,
+        "avif:828": 14550,
+        "webp:828": 16910,
+        "avif:1080": 19178,
+        "webp:1080": 23338,
+        "jpg:1080": 47244
+      },
+      "withinBudget": true
+    },
+    "/catalog/hero/harbour-clog/hero-desktop": {
+      "base": "/catalog/hero/harbour-clog/hero-desktop",
+      "quality": "render",
+      "widths": [
+        828,
+        1280,
+        1920
+      ],
+      "formats": [
+        "avif",
+        "webp"
+      ],
+      "fallback": "/catalog/hero/harbour-clog/hero-desktop-1920.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRlIAAABXRUJQVlA4IEYAAADQAwCdASoYAA0APu1kqk2ppaQiMAgBMB2JYwC7ACHfxCs54NmHyAAA/vKgYwZGTeiiLcyzCosUQQe7R7473MrbXR/hwAAA",
+      "aspect": 1.7916666666666667,
+      "glowHex": "#3B4F69",
+      "bytes": {
+        "avif:828": 7684,
+        "webp:828": 7882,
+        "avif:1280": 18784,
+        "webp:1280": 18786,
+        "avif:1920": 28737,
+        "webp:1920": 30894,
+        "jpg:1920": 50679
+      },
+      "withinBudget": true
+    },
+    "/catalog/hero/harbour-clog/hero-mobile": {
+      "base": "/catalog/hero/harbour-clog/hero-mobile",
+      "quality": "render",
+      "widths": [
+        480,
+        828,
+        1080
+      ],
+      "formats": [
+        "avif",
+        "webp"
+      ],
+      "fallback": "/catalog/hero/harbour-clog/hero-mobile-1080.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRmYAAABXRUJQVlA4IFoAAADQAwCdASoYAB4APu1mq06ppaQiKA1RMB2JYwC2yBEczGDvvKvNFAAA/vKhQEpfozj69bXoNnE+nCwbtm+7bWolR1hO5yBBgH3fmU6cjUx5eVfST/0RFiMDAAA=",
+      "aspect": 0.8055555555555556,
+      "glowHex": "#3B4F69",
+      "bytes": {
+        "avif:480": 4762,
+        "webp:480": 5090,
+        "avif:828": 11879,
+        "webp:828": 12408,
+        "avif:1080": 15879,
+        "webp:1080": 17512,
+        "jpg:1080": 30788
+      },
+      "withinBudget": true
+    },
+    "/catalog/hero/reef-flip/hero-desktop": {
+      "base": "/catalog/hero/reef-flip/hero-desktop",
+      "quality": "render",
+      "widths": [
+        828,
+        1280,
+        1920
+      ],
+      "formats": [
+        "avif",
+        "webp"
+      ],
+      "fallback": "/catalog/hero/reef-flip/hero-desktop-1920.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRnIAAABXRUJQVlA4IGYAAADwAwCdASoYAA0APu1orU6ppiSiMAgBMB2JYwCo9Gk8E5xYxl3baKewAP79U5R2zP10Vbjr+/+Sl22/izzaxn/GenRaN+duQrSUSGfJn32a1BALJGDnreTivZPXFYFjc5UZGCDpXAA=",
+      "aspect": 1.7916666666666667,
+      "glowHex": "#9B8360",
+      "bytes": {
+        "avif:828": 4734,
+        "webp:828": 5946,
+        "avif:1280": 7966,
+        "webp:1280": 10760,
+        "avif:1920": 12772,
+        "webp:1920": 18656,
+        "jpg:1920": 36629
+      },
+      "withinBudget": true
+    },
+    "/catalog/hero/reef-flip/hero-mobile": {
+      "base": "/catalog/hero/reef-flip/hero-mobile",
+      "quality": "render",
+      "widths": [
+        480,
+        828,
+        1080
+      ],
+      "formats": [
+        "avif",
+        "webp"
+      ],
+      "fallback": "/catalog/hero/reef-flip/hero-mobile-1080.jpg",
+      "blurDataURL": "data:image/webp;base64,UklGRmwAAABXRUJQVlA4IGAAAAAwBACdASoYAB4APuVeqE2pJSQjMAwBIByJYwC7ACHfx0fqeQ2tmOHkSmgA/vKYNaA6NPY2N7OuGC6EdVkW1/GmIXKpT7A5kvMyNynUjazXMD9ZksQvz0vv+538k1gTAAA=",
+      "aspect": 0.8055555555555556,
+      "glowHex": "#9B8360",
+      "bytes": {
+        "avif:480": 3370,
+        "webp:480": 4124,
+        "avif:828": 6515,
+        "webp:828": 8852,
+        "avif:1080": 8899,
+        "webp:1080": 12692,
+        "jpg:1080": 25432
+      },
+      "withinBudget": true
+    }
+  }
+}
