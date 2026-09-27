@@ -200,3 +200,87 @@
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Hero showcase (H03): stacked scene frames + per-slide glow from data. */
+
+.grid-area-stack {
+  display: grid;
+}
+
+.grid-area-stack > * {
+  grid-area: 1 / 1;
+}
+
+.hero-scene-glow {
+  background: radial-gradient(
+    ellipse at 58% 40%,
+    color-mix(in srgb, var(--hero-glow) 24%, transparent),
+    transparent 42%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-hero-shoe],
+  [data-hero-content] {
+    transition: none !important;
+  }
+}
+
+/* Hero thumbnail hover ripple (H05) — the lexicon ripple, thumb-sized. */
+.hero-thumb .thumb-ripple {
+  opacity: 0;
+}
+
+.hero-thumb-hover .thumb-ripple {
+  animation: aq-thumb-ripple 0.6s var(--ease-tide);
+}
+
+@keyframes aq-thumb-ripple {
+  0% {
+    box-shadow: inset 0 0 0 0 rgb(var(--aqua) / 0);
+    opacity: 1;
+  }
+  35% {
+    box-shadow: inset 0 0 0 2px rgb(var(--aqua) / 0.45);
+    opacity: 1;
+  }
+  100% {
+    box-shadow: inset 0 0 0 10px rgb(var(--aqua) / 0);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-thumb-hover .thumb-ripple {
+    animation: none;
+  }
+}
+
+/* Hero mobile scene (H06): stacked layout, Motion-only transitions. */
+
+/* Register the per-slide glow so it can interpolate: the mobile glow layer
+   morphs through this custom property in pure CSS (--dur-glow). Desktop's
+   GSAP glow tween is unaffected — no transition is declared there. */
+@property --hero-glow {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1e7f78;
+}
+
+[data-hero-glow] {
+  transition: --hero-glow var(--dur-glow) var(--ease-tide);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-hero-glow] {
+    transition: none;
+  }
+}

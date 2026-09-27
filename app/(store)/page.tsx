@@ -1,17 +1,29 @@
+import { headers } from "next/headers";
+
 import { HomeView } from "@/components/home/HomeView";
+import { getHeroSlides } from "@/lib/catalog/hero";
 import { allCards, getFeatured } from "@/lib/catalog/queries";
 
 export const revalidate = 300;
 
+/** H06: phones get the stacked mobile hero straight from the server. */
+function initialMobileFromUA(): boolean {
+  const ua = headers().get("user-agent") ?? "";
+  return /Android|iPhone|iPad|iPod|IEMobile|BlackBerry|Silk|Mobile/i.test(ua);
+}
+
 export default async function HomePage() {
-  const [arrivals, bestsellers, featuredList, cards] = await Promise.all([
+  const [arrivals, bestsellers, featuredList, cards, heroSlides] = await Promise.all([
     getFeatured("new"),
     getFeatured("bestsellers"),
     getFeatured("featured"),
     allCards(),
+    getHeroSlides(),
   ]);
   return (
     <HomeView
+      initialMobile={initialMobileFromUA()}
+      heroSlides={heroSlides}
       arrivals={arrivals}
       bestsellers={bestsellers}
       featured={featuredList[0] ?? null}

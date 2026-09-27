@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Anatomy } from "@/components/home/Anatomy";
 import { Campaign } from "@/components/home/Campaign";
 import { EditRail } from "@/components/home/EditRail";
+import { HeroShowcase } from "@/components/home/hero/HeroShowcase";
 import { HeroStage } from "@/components/home/HeroStage";
 import { ShopIndex } from "@/components/home/ShopIndex";
 import { CountUp } from "@/components/motion/CountUp";
@@ -12,16 +13,20 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { Heading } from "@/components/ui/Heading";
 import { homeCopy } from "@/content/site";
-import type { ProductCardModel } from "@/lib/commerce/types";
+import type { HeroSlide, ProductCardModel } from "@/lib/commerce/types";
 import { formatINR } from "@/lib/money";
 import { stagger } from "@/lib/motion/tokens";
 
 export function HomeView({
+  initialMobile,
+  heroSlides,
   arrivals,
   bestsellers,
   featured,
   counts,
 }: {
+  initialMobile: boolean;
+  heroSlides: HeroSlide[];
   arrivals: ProductCardModel[];
   bestsellers: ProductCardModel[];
   featured: ProductCardModel | null;
@@ -41,16 +46,24 @@ export function HomeView({
   return (
     <>
       <TideIntro />
-      <HeroStage
-        eyebrow={homeCopy.eyebrow}
-        lead={homeCopy.headlineLead}
-        emphasis={homeCopy.headlineEm}
-        rest={homeCopy.headlineRest}
-        copy={homeCopy.lead}
-        price={featured ? formatINR(featured.pricePaise) : formatINR(49900)}
-        productHref={featured ? `/product/${featured.slug}?color=${featured.colorwaySlug}` : "/product/tide-slide?color=midnight"}
-        edit={edit}
-      />
+      {heroSlides.length > 0 ? (
+        <HeroShowcase slides={heroSlides} initialMobile={initialMobile} />
+      ) : (
+        <HeroStage
+          eyebrow={homeCopy.eyebrow}
+          lead={homeCopy.headlineLead}
+          emphasis={homeCopy.headlineEm}
+          rest={homeCopy.headlineRest}
+          copy={homeCopy.lead}
+          price={formatINR(featured?.pricePaise ?? 49900)}
+          productHref={
+            featured
+              ? `/product/${featured.slug}?color=${featured.colorwaySlug}`
+              : "/product/tide-slide?color=midnight"
+          }
+          edit={edit}
+        />
+      )}
 
       <ShopIndex
         rows={[
