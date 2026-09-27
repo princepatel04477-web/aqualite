@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
+import { HeroCarouselPagination } from "@/components/home/hero/HeroCarouselPagination";
 import { HeroCounter } from "@/components/home/hero/HeroCounter";
 import { HeroPriceBlock } from "@/components/home/hero/HeroPriceBlock";
-import { HeroThumbRail } from "@/components/home/hero/HeroThumbRail";
 import { Button } from "@/components/ui/Button";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { heroImage, preloadHeroImage } from "@/lib/catalog/hero-image";
@@ -237,9 +237,17 @@ export function HeroMobileScene({
         </AnimatePresence>
       </motion.div>
 
-      {/* Below the fold: 5×56px snap thumbs + the active name (mono 10px). */}
-      <div className="relative mt-6 border-t border-hairline pt-4">
-        <HeroThumbRail compact slides={slides} activeIndex={activeIndex} onSelect={onSelect} onProgress={onProgress} />
+      {/* Carousel navigation controls + indicators */}
+      <div className="relative mt-6 border-t border-hairline pt-4 flex justify-center">
+        <HeroCarouselPagination
+          compact
+          slides={slides}
+          activeIndex={activeIndex}
+          onSelect={onSelect}
+          onPrev={onPrev}
+          onNext={onNext}
+          onProgress={onProgress}
+        />
       </div>
     </div>
   );

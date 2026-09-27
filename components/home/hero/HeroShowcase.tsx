@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 
+import { HeroCarouselPagination } from "@/components/home/hero/HeroCarouselPagination";
 import { HeroCounter } from "@/components/home/hero/HeroCounter";
 import { type HeroCtaPair } from "@/components/home/hero/HeroCtas";
 import { HeroLiveRegion } from "@/components/home/hero/HeroLiveRegion";
 import { HeroMobileScene } from "@/components/home/hero/HeroMobileScene";
 import { HeroPriceBlock } from "@/components/home/hero/HeroPriceBlock";
 import { HeroSceneBackdrop, HeroSceneContent } from "@/components/home/hero/HeroScene";
-import { HeroThumbRail } from "@/components/home/hero/HeroThumbRail";
 import {
   HERO_AUTOPLAY_MS,
   HERO_AUTOPLAY_MS_MOBILE,
@@ -150,6 +150,31 @@ export function HeroShowcase({
         </div>
       </div>
 
+      {/* Floating carousel navigation arrows */}
+      <div className="pointer-events-none absolute inset-y-0 inset-x-0 z-[10] flex items-center justify-between px-3 sm:px-6 lg:px-8">
+        <button
+          type="button"
+          onClick={hero.prev}
+          aria-label="Previous slide"
+          className="pointer-events-auto group flex h-11 w-11 lg:h-12 lg:w-12 items-center justify-center rounded-full border border-hairline/80 bg-abyss/60 text-foam backdrop-blur-md transition-all duration-quick hover:border-aqua hover:bg-abyss/90 hover:text-aqua hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aqua"
+        >
+          <svg className="h-5 w-5 transition-transform duration-quick group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          onClick={hero.next}
+          aria-label="Next slide"
+          className="pointer-events-auto group flex h-11 w-11 lg:h-12 lg:w-12 items-center justify-center rounded-full border border-hairline/80 bg-abyss/60 text-foam backdrop-blur-md transition-all duration-quick hover:border-aqua hover:bg-abyss/90 hover:text-aqua hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aqua"
+        >
+          <svg className="h-5 w-5 transition-transform duration-quick group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
       <div className="relative z-[2] page-wrap pb-8 lg:pb-10">
         <div data-hero-copy className="grid-area-stack">
           {slides.map((slide, index) => (
@@ -167,10 +192,12 @@ export function HeroShowcase({
         <div data-hero-band className="mt-8 grid grid-cols-2 items-end gap-6 border-t border-hairline pt-5 lg:grid-cols-[auto_1fr_auto]">
           <HeroPriceBlock slide={active} />
           <div className="col-span-2 order-3 lg:order-none lg:col-span-1 flex lg:justify-center">
-            <HeroThumbRail
+            <HeroCarouselPagination
               slides={slides}
               activeIndex={hero.activeIndex}
               onSelect={hero.goTo}
+              onPrev={hero.prev}
+              onNext={hero.next}
               onProgress={hero.onProgress}
             />
           </div>
