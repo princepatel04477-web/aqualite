@@ -98,6 +98,18 @@ describe("heroMachine interruptions", () => {
     expect(next.step).toMatchObject({ from: 2, to: 3, fastForwarded: true });
   });
 
+  it("a superseded timeline's late TRANSITION_DONE is ignored", () => {
+    const machine = createHeroMachine({ count: 5 });
+    machine.dispatch({ type: "GOTO", index: 1, userInitiated: true });
+    machine.dispatch({ type: "GOTO", index: 3, userInitiated: true }); // fast-forwards 1
+    // Old timeline (to=1) settles late — must not land the in-flight 1→3.
+    machine.dispatch({ type: "TRANSITION_DONE", index: 1 });
+    expect(machine.getState()).toEqual({ name: "transitioning", from: 1, to: 3, direction: 1 });
+    // The current timeline lands normally.
+    machine.dispatch({ type: "TRANSITION_DONE", index: 3 });
+    expect(machine.getState()).toEqual({ name: "idle", index: 3 });
+  });
+
   it("TRANSITION_DONE while idle is a no-op", () => {
     const machine = createHeroMachine({ count: 5 });
     expect(machine.dispatch({ type: "TRANSITION_DONE" }).handled).toBe(false);

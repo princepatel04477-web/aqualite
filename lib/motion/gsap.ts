@@ -26,19 +26,45 @@ export type SplitResult = {
 /**
  * Line mask splitter. GSAP Club SplitText is not in the free package;
  * this is the project splitter every WetInk reveal uses.
+ *
+ * Preserves inline <em> markup: words inside an emphasis keep it (wrapped in
+ * a new <em>), so italic display phrases survive line splitting.
  */
 export function splitLines(element: HTMLElement): SplitResult {
   const original = element.innerHTML;
-  const text = element.textContent ?? "";
-  const words = text.split(/\s+/).filter(Boolean);
+
+  type Word = { text: string; italic: boolean };
+  const words: Word[] = [];
+  element.childNodes.forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      for (const word of (node.textContent ?? "").split(/\s+/).filter(Boolean)) {
+        words.push({ text: word, italic: false });
+      }
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const italic = (node as HTMLElement).tagName === "EM";
+      for (const word of (node.textContent ?? "").split(/\s+/).filter(Boolean)) {
+        words.push({ text: word, italic });
+      }
+    }
+  });
+
   element.textContent = "";
-  const wordEls: HTMLSpanElement[] = [];
+  const wordEls: HTMLElement[] = [];
   words.forEach((word, index) => {
-    const span = document.createElement("span");
-    span.textContent = word;
+    let span: HTMLElement;
+    if (word.italic) {
+      const em = document.createElement("em");
+      span = document.createElement("span");
+      span.textContent = word.text;
+      em.appendChild(span);
+      element.appendChild(em);
+    } else {
+      span = document.createElement("span");
+      span.textContent = word.text;
+      element.appendChild(span);
+    }
     span.style.display = "inline-block";
     span.setAttribute("aria-hidden", "true");
-    element.appendChild(span);
     wordEls.push(span);
     if (index < words.length - 1) {
       element.appendChild(document.createTextNode(" "));
@@ -47,7 +73,7 @@ export function splitLines(element: HTMLElement): SplitResult {
 
   const lines: HTMLElement[] = [];
   let currentTop: number | null = null;
-  let bucket: HTMLSpanElement[] = [];
+  let bucket: HTMLElement[] = [];
 
   const flush = (): void => {
     if (bucket.length === 0) return;
@@ -58,7 +84,13 @@ export function splitLines(element: HTMLElement): SplitResult {
     inner.style.display = "block";
     inner.setAttribute("aria-hidden", "true");
     bucket.forEach((word, index) => {
-      inner.appendChild(word);
+      // Re-wrap emphasised words in <em> inside the line so styling holds.
+      const parent = word.parentElement;
+      if (parent && parent.tagName === "EM" && parent.parentElement === element) {
+        inner.appendChild(parent);
+      } else {
+        inner.appendChild(word);
+      }
       if (index < bucket.length - 1) inner.appendChild(document.createTextNode(" "));
     });
     mask.appendChild(inner);

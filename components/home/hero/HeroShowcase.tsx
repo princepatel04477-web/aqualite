@@ -1,26 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { useGSAP } from "@gsap/react";
 
+import { createSceneTransition } from "@/components/home/hero/transitions/createSceneTransition";
+import { WaveClipDef } from "@/components/home/hero/transitions/waveWipe";
 import { HeroLiveRegion } from "@/components/home/hero/HeroLiveRegion";
 import { HeroSceneBackdrop, HeroSceneContent } from "@/components/home/hero/HeroScene";
 import { useHeroController } from "@/components/home/hero/useHeroController";
 import { TideField } from "@/components/motion/TideField";
+import { RollingDigits } from "@/components/motion/RollingDigits";
 import type { HeroSlide } from "@/lib/commerce/types";
 import { gsap } from "@/lib/motion/gsap";
 import { whenIntroDone } from "@/lib/motion/intro";
-import { duration, gsapEase, stagger } from "@/lib/motion/tokens";
+import { duration, ease, gsapEase, stagger } from "@/lib/motion/tokens";
 import { useMotionPolicy } from "@/lib/motion/use-motion-policy";
 import { cn } from "@/lib/cn";
-import { formatINR } from "@/lib/money";
 
 /**
- * The n-piece hero showcase (H03): server-renders slide 01 exactly like the
+ * The n-piece hero showcase: server-renders slide 01 exactly like the
  * approved hero (LCP untouched), stacks scenes 02–n as data, owns the APG
  * carousel semantics, autoplay, keyboard input and the pause control.
- * Scene-change choreography arrives with H04 — scenes crossfade for now.
+ * Scene changes run the H04 GSAP timeline; the price block swaps with
+ * Motion presence per the animation-ownership table.
  */
 export function HeroShowcase({
   slides,
@@ -30,10 +34,34 @@ export function HeroShowcase({
   edit: { href: string; name: string; image: string; price: string }[];
 }) {
   const root = useRef<HTMLElement>(null);
-  const { allowCursorFX, allowPinning, reduced } = useMotionPolicy();
+  const { allowCursorFX, allowPinning, reduced, tier } = useMotionPolicy();
   const hero = useHeroController(slides);
   const activeIndexRef = useRef(hero.activeIndex);
   activeIndexRef.current = hero.activeIndex;
+  const floatTween = useRef<gsap.core.Tween | null>(null);
+  const completeRef = useRef(hero.complete);
+  completeRef.current = hero.complete;
+
+  // Buoyancy idle float on exactly one shoe — started by handover or idle state.
+  const startFloat = useCallback(
+    (index: number) => {
+      floatTween.current?.kill();
+      const node = root.current;
+      const target = node?.querySelector(`[data-hero-shoe="${index}"] [data-float]`);
+      if (!target) return;
+      gsap.killTweensOf(target);
+      floatTween.current = gsap.to(target, {
+        y: 12,
+        rotate: 1.4,
+        duration: duration.cinematic * 2,
+        yoyo: true,
+        repeat: -1,
+        ease: gsapEase.drift,
+        delay: duration.cinematic,
+      });
+    },
+    [],
+  );
 
   // inert + aria-hidden on inactive scenes (React 18 has no inert prop).
   useEffect(() => {
@@ -53,26 +81,47 @@ export function HeroShowcase({
     }
   }, [hero.activeIndex, slides.length]);
 
-  // Buoyancy idle float on exactly one shoe — the active scene's.
+  // H04: run the scene-change timeline whenever the machine starts one.
+  const stepKey = hero.lastStep ? `${hero.lastStep.from}-${hero.lastStep.to}-${hero.direction}` : "none";
+  const isTransitioning = hero.isTransitioning;
   useEffect(() => {
-    if (reduced) return;
     const node = root.current;
-    if (!node) return;
-    const target = node.querySelector(`[data-hero-shoe="${hero.activeIndex}"] [data-float]`);
-    if (!target) return;
-    const tween = gsap.to(target, {
-      y: 12,
-      rotate: 1.4,
-      duration: duration.cinematic * 2,
-      yoyo: true,
-      repeat: -1,
-      ease: gsapEase.drift,
-      delay: duration.cinematic,
+    const step = hero.lastStep;
+    if (!node || !step || !isTransitioning) return;
+    const fromSlide = slides[step.from];
+    const toSlide = slides[step.to];
+    if (!fromSlide || !toSlide) return;
+
+    const transition = createSceneTransition({
+      root: node,
+      from: step.from,
+      to: step.to,
+      direction: step.direction,
+      policy: { tier, reduced },
+      slides: {
+        from: { eyebrow: fromSlide.eyebrow, glowHex: fromSlide.glowHex },
+        to: { eyebrow: toSlide.eyebrow, glowHex: toSlide.glowHex },
+      },
+      onFloatHandover: startFloat,
+      onSettled: (index) => completeRef.current(index),
     });
+    transition.timeline.play();
     return () => {
-      tween.kill();
+      // Interrupted: jump the old timeline to its end state, then start fresh.
+      transition.kill();
     };
-  }, [hero.activeIndex, reduced]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepKey, isTransitioning, tier, reduced, startFloat]);
+
+  // While idle (no transition running), the float lives on the active shoe.
+  useEffect(() => {
+    if (isTransitioning) return;
+    if (reduced) return;
+    startFloat(hero.activeIndex);
+    return () => {
+      floatTween.current?.kill();
+    };
+  }, [hero.activeIndex, isTransitioning, reduced, startFloat]);
 
   useGSAP(
     () => {
@@ -165,7 +214,10 @@ export function HeroShowcase({
     >
       <h1 className="sr-only">Aqualite — footwear for the monsoon</h1>
       <HeroLiveRegion announcement={hero.announcement} />
-      <TideField className="absolute inset-0 h-full w-full" />
+      <WaveClipDef />
+      <div data-hero-ripples className="absolute inset-0">
+        <TideField className="h-full w-full" />
+      </div>
 
       <div data-hero-scroll className="pointer-events-none absolute inset-0">
         <div data-hero-scenes className="absolute inset-0">
@@ -197,9 +249,24 @@ export function HeroShowcase({
 
         <div data-hero-band className="mt-8 flex flex-col gap-6 border-t border-hairline pt-5 sm:flex-row sm:items-end sm:justify-between">
           <Link href={productHref} data-meta className="group">
-            <p className="font-mono text-eyebrow uppercase text-aqua">{active.product.name}</p>
+            <p className="font-mono text-eyebrow uppercase text-aqua">
+              <span className="block overflow-hidden">
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <motion.span
+                    key={active.product.name}
+                    initial={{ y: "110%" }}
+                    animate={{ y: "0%" }}
+                    exit={{ y: "-110%" }}
+                    transition={{ duration: duration.base, ease: ease.tide }}
+                    className="block"
+                  >
+                    {active.product.name}
+                  </motion.span>
+                </AnimatePresence>
+              </span>
+            </p>
             <p className="mt-1 font-body text-h3 tabular text-foam transition-colors duration-quick ease-tide group-hover:text-sand">
-              {formatINR(active.product.pricePaise)}
+              ₹<RollingDigits value={Math.round(active.product.pricePaise / 100)} />
             </p>
           </Link>
           <ul data-meta className="flex gap-3">

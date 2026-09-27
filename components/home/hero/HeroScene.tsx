@@ -121,7 +121,7 @@ export function HeroSceneContent({
       <div className="lg:col-span-8">
         <div data-meta>
           <Eyebrow index={pad(index)} total="06">
-            {slide.eyebrow}
+            <span data-hero-eyebrow-text>{slide.eyebrow}</span>
           </Eyebrow>
         </div>
         <h2 data-hero-headline className="heading-display mt-4 font-display text-display font-normal text-foam">

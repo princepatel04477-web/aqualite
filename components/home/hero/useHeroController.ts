@@ -41,6 +41,7 @@ export function useHeroController(slides: { id: string; product: { name: string;
   const [activeIndex, setActiveIndex] = useState(0);
   const [direction, setDirection] = useState<HeroDirection>(1);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [lastStep, setLastStep] = useState<HeroStep | null>(null);
   const [playPaused, setPlayPaused] = useState(false);
   const [announcement, setAnnouncement] = useState<HeroAnnouncement | null>(null);
   const [mountedImages, setMountedImages] = useState<Set<number>>(() => new Set(count > 0 ? [0] : []));
@@ -67,6 +68,7 @@ export function useHeroController(slides: { id: string; product: { name: string;
       setDirection(step.direction);
       setActiveIndex(step.to);
       setIsTransitioning(true);
+      setLastStep(step);
       setMountedImages((current) => {
         if (current.has(step.to)) return current;
         const next = new Set(current);
@@ -110,8 +112,9 @@ export function useHeroController(slides: { id: string; product: { name: string;
     });
   }, [machine]);
 
-  const complete = useCallback(() => {
-    machine.dispatch({ type: "TRANSITION_DONE" });
+  const complete = useCallback(
+    (index: number) => {
+    machine.dispatch({ type: "TRANSITION_DONE", index });
     setIsTransitioning(false);
     progressRef.current = 0;
     for (const listener of progressListeners.current) listener(0);
@@ -125,7 +128,9 @@ export function useHeroController(slides: { id: string; product: { name: string;
         });
       });
     }
-  }, [machine]);
+    },
+    [machine],
+  );
 
   // Reduced motion pauses autoplay; navigation stays available.
   useEffect(() => {
@@ -266,6 +271,7 @@ export function useHeroController(slides: { id: string; product: { name: string;
     activeIndex,
     direction,
     isTransitioning,
+    lastStep,
     playPaused,
     announcement,
     mountedImages,

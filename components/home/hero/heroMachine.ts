@@ -31,7 +31,7 @@ export type HeroEvent =
   | { type: "AUTOPLAY_TICK" }
   | { type: "PAUSE"; reason: HeroPauseReason }
   | { type: "RESUME"; reason: HeroPauseReason }
-  | { type: "TRANSITION_DONE" };
+  | { type: "TRANSITION_DONE"; index?: number };
 
 export type HeroStep = {
   from: number;
@@ -139,6 +139,11 @@ export function createHeroMachine(options: { count: number; now?: () => number }
         return noStep;
       }
       if (event.type === "TRANSITION_DONE") {
+        // A superseded timeline settles late; only the machine's current
+        // transition may land (index-matched).
+        if (typeof event.index === "number" && (state.name !== "transitioning" || state.to !== event.index)) {
+          return noStep;
+        }
         const done = completeTransition();
         return done === null ? noStep : { handled: true, step: null, userInitiated: false };
       }
