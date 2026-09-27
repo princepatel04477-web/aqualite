@@ -200,3 +200,28 @@
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Hero showcase (H03): stacked scene frames + per-slide glow from data. */
+
+.grid-area-stack {
+  display: grid;
+}
+
+.grid-area-stack > * {
+  grid-area: 1 / 1;
+}
+
+.hero-scene-glow {
+  background: radial-gradient(
+    ellipse at 58% 40%,
+    color-mix(in srgb, var(--hero-glow) 24%, transparent),
+    transparent 42%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-hero-shoe],
+  [data-hero-content] {
+    transition: none !important;
+  }
+}

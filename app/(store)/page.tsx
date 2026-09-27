@@ -5,7 +5,7 @@ import { allCards, getFeatured } from "@/lib/catalog/queries";
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const [arrivals, bestsellers, featuredList, cards, slides] = await Promise.all([
+  const [arrivals, bestsellers, featuredList, cards, heroSlides] = await Promise.all([
     getFeatured("new"),
     getFeatured("bestsellers"),
     getFeatured("featured"),
@@ -14,7 +14,7 @@ export default async function HomePage() {
   ]);
   return (
     <HomeView
-      hero={slides[0] ?? null}
+      heroSlides={heroSlides}
       arrivals={arrivals}
       bestsellers={bestsellers}
       featured={featuredList[0] ?? null}

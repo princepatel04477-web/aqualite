@@ -118,7 +118,10 @@ type State = {
   inactiveVariants: string[];
 };
 
-const DATA_PATH = path.join(process.cwd(), ".data", "store.json");
+const DATA_PATH = path.join(
+  process.env.AQUALITE_DATA_PATH ?? path.join(process.cwd(), ".data"),
+  "store.json",
+);
 
 const defaultSettings = (): Settings => ({
   shippingThresholdPaise: 99900,

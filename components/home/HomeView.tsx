@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Anatomy } from "@/components/home/Anatomy";
 import { Campaign } from "@/components/home/Campaign";
 import { EditRail } from "@/components/home/EditRail";
+import { HeroShowcase } from "@/components/home/hero/HeroShowcase";
 import { HeroStage } from "@/components/home/HeroStage";
 import { ShopIndex } from "@/components/home/ShopIndex";
 import { CountUp } from "@/components/motion/CountUp";
@@ -17,13 +18,13 @@ import { formatINR } from "@/lib/money";
 import { stagger } from "@/lib/motion/tokens";
 
 export function HomeView({
-  hero,
+  heroSlides,
   arrivals,
   bestsellers,
   featured,
   counts,
 }: {
-  hero: HeroSlide | null;
+  heroSlides: HeroSlide[];
   arrivals: ProductCardModel[];
   bestsellers: ProductCardModel[];
   featured: ProductCardModel | null;
@@ -43,22 +44,24 @@ export function HomeView({
   return (
     <>
       <TideIntro />
-      <HeroStage
-        eyebrow={hero?.eyebrow ?? homeCopy.eyebrow}
-        lead={hero?.headline.before ?? homeCopy.headlineLead}
-        emphasis={hero?.headline.italic ?? homeCopy.headlineEm}
-        rest={hero?.headline.after ?? homeCopy.headlineRest}
-        copy={hero?.lead ?? homeCopy.lead}
-        price={hero ? formatINR(hero.product.pricePaise) : formatINR(featured?.pricePaise ?? 49900)}
-        productHref={
-          hero
-            ? `/product/${hero.product.slug}?color=${hero.product.colorwaySlug}`
-            : featured
+      {heroSlides.length > 0 ? (
+        <HeroShowcase slides={heroSlides} edit={edit} />
+      ) : (
+        <HeroStage
+          eyebrow={homeCopy.eyebrow}
+          lead={homeCopy.headlineLead}
+          emphasis={homeCopy.headlineEm}
+          rest={homeCopy.headlineRest}
+          copy={homeCopy.lead}
+          price={formatINR(featured?.pricePaise ?? 49900)}
+          productHref={
+            featured
               ? `/product/${featured.slug}?color=${featured.colorwaySlug}`
               : "/product/tide-slide?color=midnight"
-        }
-        edit={edit}
-      />
+          }
+          edit={edit}
+        />
+      )}
 
       <ShopIndex
         rows={[
