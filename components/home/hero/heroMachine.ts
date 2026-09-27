@@ -8,6 +8,8 @@
  */
 
 export const HERO_AUTOPLAY_MS = 7000;
+/** H06: phones/tablets below the desktop breakpoint autoplay a touch quicker. */
+export const HERO_AUTOPLAY_MS_MOBILE = 6000;
 export const HERO_INTERACTION_COOLDOWN_MS = 20000;
 
 export type HeroPauseReason =
@@ -16,6 +18,7 @@ export type HeroPauseReason =
   | "offscreen"
   | "document-hidden"
   | "user-interacted"
+  | "touching"
   | "reduced-motion";
 
 export type HeroDirection = 1 | -1;
@@ -50,6 +53,8 @@ export type HeroDispatchResult = {
 
 export type HeroMachine = {
   count: number;
+  /** Autoplay cadence for this machine (7s desktop, 6s mobile — H06). */
+  autoplayMs: number;
   getState(): HeroState;
   activeIndex(): number;
   isPaused(): boolean;
@@ -61,6 +66,8 @@ export type HeroMachine = {
   /** The pause/play button: a sticky pause that outlives the 20s cooldown. */
   setPlayPaused(paused: boolean): void;
   isPlayPaused(): boolean;
+  /** Starts the 20s cooldown without navigating (swipe release, H06). */
+  noteInteraction(): void;
   dispatch(event: HeroEvent): HeroDispatchResult;
 };
 
@@ -74,10 +81,15 @@ export function heroDirection(from: number, to: number, count: number): HeroDire
   return forward <= count / 2 ? 1 : -1;
 }
 
-export function createHeroMachine(options: { count: number; now?: () => number }): HeroMachine {
+export function createHeroMachine(options: {
+  count: number;
+  autoplayMs?: number;
+  now?: () => number;
+}): HeroMachine {
   const count = options.count;
   if (count < 1) throw new Error("A hero needs at least one slide.");
   const now = options.now ?? (() => Date.now());
+  const autoplayMs = options.autoplayMs ?? HERO_AUTOPLAY_MS;
 
   let state: HeroState = { name: "idle", index: 0 };
   const pauses = new Set<HeroPauseReason>();
@@ -101,6 +113,7 @@ export function createHeroMachine(options: { count: number; now?: () => number }
 
   const machine: HeroMachine = {
     count,
+    autoplayMs,
     getState: () => state,
     activeIndex: () => (state.name === "transitioning" ? state.to : state.index),
     isPaused: () => pauses.size > 0,
@@ -126,6 +139,11 @@ export function createHeroMachine(options: { count: number; now?: () => number }
     },
 
     isPlayPaused: () => stickyPause,
+
+    noteInteraction() {
+      pauses.add("user-interacted");
+      cooldownUntil = now() + HERO_INTERACTION_COOLDOWN_MS;
+    },
 
     dispatch(event) {
       const user = event.type === "AUTOPLAY_TICK" ? false : Boolean("userInitiated" in event && event.userInitiated);

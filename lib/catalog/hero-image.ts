@@ -53,10 +53,14 @@ export function heroImage(desktopPath: string, mobilePath: string, kind: "deskto
   };
 }
 
-/** Warms the browser cache for a slide's desktop hero (hover preload, H05). */
-export function preloadHeroImage(desktopPath: string, mobilePath: string): void {
-  const spec = heroImage(desktopPath, mobilePath, "desktop");
-  const src = spec.fallback ?? desktopPath;
+/** Warms the browser cache for a slide's hero image (H05 hover, H06 idle). */
+export function preloadHeroImage(
+  desktopPath: string,
+  mobilePath: string,
+  kind: "desktop" | "mobile" = "desktop",
+): void {
+  const spec = heroImage(desktopPath, mobilePath, kind);
+  const src = spec.fallback ?? (kind === "desktop" ? desktopPath : mobilePath);
   if (typeof window === "undefined" || !src) return;
   const image = new Image();
   image.src = src;

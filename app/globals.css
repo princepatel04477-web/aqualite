@@ -255,3 +255,32 @@
     animation: none;
   }
 }
+
+/* Hero mobile scene (H06): stacked layout, Motion-only transitions. */
+
+/* Register the per-slide glow so it can interpolate: the mobile glow layer
+   morphs through this custom property in pure CSS (--dur-glow). Desktop's
+   GSAP glow tween is unaffected — no transition is declared there. */
+@property --hero-glow {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1e7f78;
+}
+
+[data-hero-glow] {
+  transition: --hero-glow var(--dur-glow) var(--ease-tide);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-hero-glow] {
+    transition: none;
+  }
+}

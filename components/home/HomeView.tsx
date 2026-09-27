@@ -18,12 +18,14 @@ import { formatINR } from "@/lib/money";
 import { stagger } from "@/lib/motion/tokens";
 
 export function HomeView({
+  initialMobile,
   heroSlides,
   arrivals,
   bestsellers,
   featured,
   counts,
 }: {
+  initialMobile: boolean;
   heroSlides: HeroSlide[];
   arrivals: ProductCardModel[];
   bestsellers: ProductCardModel[];
@@ -45,7 +47,7 @@ export function HomeView({
     <>
       <TideIntro />
       {heroSlides.length > 0 ? (
-        <HeroShowcase slides={heroSlides} />
+        <HeroShowcase slides={heroSlides} initialMobile={initialMobile} />
       ) : (
         <HeroStage
           eyebrow={homeCopy.eyebrow}

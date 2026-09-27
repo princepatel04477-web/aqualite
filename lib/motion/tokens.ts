@@ -64,6 +64,21 @@ export const hero = {
   waveAmplitude: 0.03, // of frame width (≈3vw)
   wavePoints: 18,
   driftX: 2, // % ripple drift
+
+  /**
+   * H06 mobile scene-change (Motion-only tier): out x±24 fade 0.25s, in
+   * x±24 fade 0.35s, shoe rise 12px, half-amp Buoyancy idle float, and the
+   * glow custom-property morph handled purely in CSS (--dur-glow).
+   */
+  mobile: {
+    outX: 24, // px
+    outDuration: 0.25, // s
+    inDuration: 0.35, // s
+    riseY: 12, // px
+    floatAmp: 2.5, // px — half of Buoyancy's medium tier
+    floatDuration: 2.1, // s — Buoyancy's period
+    glowMs: 400, // ms — keep in sync with tokens.css --dur-glow
+  },
 } as const;
 
 export const spring = {

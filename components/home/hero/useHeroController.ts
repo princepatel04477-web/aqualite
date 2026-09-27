@@ -33,10 +33,17 @@ function onIdle(window: Window, callback: () => void): () => void {
  * reason bookkeeping, keyboard input, image preloading (slide 1 SSR, slide 2
  * on idle, the rest only after the first transition) and live-region copy.
  */
-export function useHeroController(slides: { id: string; product: { name: string; pricePaise: number } }[]) {
+export function useHeroController(
+  slides: { id: string; product: { name: string; pricePaise: number } }[],
+  options?: { autoplayMs?: number },
+) {
   const count = slides.length;
+  const autoplayMs = options?.autoplayMs ?? HERO_AUTOPLAY_MS;
   const { reduced } = useMotionPolicy();
-  const machine = useMemo(() => createHeroMachine({ count: Math.max(1, count) }), [count]);
+  const machine = useMemo(
+    () => createHeroMachine({ count: Math.max(1, count), autoplayMs }),
+    [count, autoplayMs],
+  );
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [direction, setDirection] = useState<HeroDirection>(1);
@@ -212,7 +219,7 @@ export function useHeroController(slides: { id: string; product: { name: string;
         last = time;
         return;
       }
-      const next = progressRef.current + delta / HERO_AUTOPLAY_MS;
+      const next = progressRef.current + delta / machine.autoplayMs;
       if (next >= 1) {
         progressRef.current = 0;
         for (const listener of progressListeners.current) listener(0);
@@ -238,6 +245,16 @@ export function useHeroController(slides: { id: string; product: { name: string;
     });
     return stop;
   }, [count]);
+
+  // H06 touch: autoplay freezes while touching and resumes 20s after release.
+  const onTouchStart = useCallback(() => {
+    machine.dispatch({ type: "PAUSE", reason: "touching" });
+  }, [machine]);
+
+  const onTouchEnd = useCallback(() => {
+    machine.dispatch({ type: "RESUME", reason: "touching" });
+    machine.noteInteraction();
+  }, [machine]);
 
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLElement>) => {
@@ -283,5 +300,7 @@ export function useHeroController(slides: { id: string; product: { name: string;
     complete,
     onProgress,
     onKeyDown,
+    onTouchStart,
+    onTouchEnd,
   };
 }

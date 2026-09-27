@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   HERO_AUTOPLAY_MS,
+  HERO_AUTOPLAY_MS_MOBILE,
   HERO_INTERACTION_COOLDOWN_MS,
   createHeroMachine,
   heroDirection,
@@ -210,5 +211,80 @@ describe("heroMachine autoplay cadence", () => {
   it("exposes the 7s interval contract", () => {
     expect(HERO_AUTOPLAY_MS).toBe(7000);
     expect(HERO_INTERACTION_COOLDOWN_MS).toBe(20000);
+  });
+});
+
+describe("heroMachine complete() end states (H06)", () => {
+  const COUNT = 5;
+
+  function landAll(machine: ReturnType<typeof createHeroMachine>, config: { autoplayMs: number }) {
+    expect(machine.autoplayMs).toBe(config.autoplayMs);
+    for (let from = 0; from < COUNT; from += 1) {
+      for (let to = 0; to < COUNT; to += 1) {
+        if (to === from) continue;
+        // Park on `from` (the previous pair left the machine on its own `to`).
+        machine.dispatch({ type: "GOTO", index: from });
+        machine.dispatch({ type: "TRANSITION_DONE", index: from });
+        expect(machine.getState()).toEqual({ name: "idle", index: from });
+
+        const result = machine.dispatch({ type: "GOTO", index: to, userInitiated: true });
+        expect(result.step).toEqual({
+          from,
+          to,
+          direction: heroDirection(from, to, COUNT),
+          fastForwarded: false,
+        });
+        expect(machine.getState()).toEqual({
+          name: "transitioning",
+          from,
+          to,
+          direction: heroDirection(from, to, COUNT),
+        });
+
+        machine.dispatch({ type: "TRANSITION_DONE", index: to });
+        // End-state snapshot: settled on `to`, autoplay held by the cooldown.
+        expect(machine.getState()).toEqual({ name: "idle", index: to });
+        expect(machine.activeIndex()).toBe(to);
+        expect(machine.isPaused()).toBe(true);
+        expect(machine.canAutoplay()).toBe(false);
+        expect(machine.cooldownRemaining()).toBeGreaterThan(0);
+        expect(machine.isPlayPaused()).toBe(false);
+      }
+    }
+  }
+
+  it("desktop cadence: all 20 from→to pairs land idle at `to` (7s)", () => {
+    landAll(createHeroMachine({ count: COUNT, autoplayMs: HERO_AUTOPLAY_MS }), { autoplayMs: 7000 });
+  });
+
+  it("mobile cadence: same 20 end states at 6s", () => {
+    landAll(createHeroMachine({ count: COUNT, autoplayMs: HERO_AUTOPLAY_MS_MOBILE }), { autoplayMs: 6000 });
+  });
+
+  it("exposes the cadence contract", () => {
+    expect(HERO_AUTOPLAY_MS).toBe(7000);
+    expect(HERO_AUTOPLAY_MS_MOBILE).toBe(6000);
+    expect(HERO_INTERACTION_COOLDOWN_MS).toBe(20000);
+  });
+
+  it("touching freezes autoplay and the release holds the 20s cooldown", () => {
+    const now = { value: 0 };
+    const machine = createHeroMachine({ count: COUNT, autoplayMs: HERO_AUTOPLAY_MS_MOBILE, now: () => now.value });
+    machine.dispatch({ type: "PAUSE", reason: "touching" });
+    expect(machine.canAutoplay()).toBe(false);
+
+    machine.dispatch({ type: "RESUME", reason: "touching" });
+    expect(machine.canAutoplay()).toBe(true); // released without interaction → autoplay may resume
+
+    machine.dispatch({ type: "PAUSE", reason: "touching" });
+    machine.noteInteraction(); // the swipe itself starts the cooldown on release
+    machine.dispatch({ type: "RESUME", reason: "touching" });
+    expect(machine.canAutoplay()).toBe(false);
+    now.value = HERO_INTERACTION_COOLDOWN_MS - 1;
+    machine.tick();
+    expect(machine.canAutoplay()).toBe(false);
+    now.value = HERO_INTERACTION_COOLDOWN_MS + 1;
+    machine.tick();
+    expect(machine.canAutoplay()).toBe(true);
   });
 });
