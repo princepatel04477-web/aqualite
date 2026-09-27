@@ -16,9 +16,10 @@ const EXT_TO_TYPE: Record<string, string> = {
 /** Serves admin-uploaded hero sources from .data/uploads. */
 export async function GET(
   _request: Request,
-  { params }: { params: { name: string } },
+  { params }: { params: Promise<{ name: string }> },
 ): Promise<NextResponse> {
-  const clean = params.name.replace(/[^A-Za-z0-9._-]/g, "");
+  const { name } = await params;
+  const clean = name.replace(/[^A-Za-z0-9._-]/g, "");
   const ext = clean.split(".").pop() ?? "";
   const type = EXT_TO_TYPE[ext];
   if (!clean.startsWith("desktop-") && !clean.startsWith("mobile-")) {
