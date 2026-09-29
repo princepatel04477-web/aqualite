@@ -1,33 +1,50 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
-import { dashboard, listOrders, listRedemptions, listPromotions } from "@/lib/store/engine";
-import { formatINR } from "@/lib/money";
+import { WidgetGrid } from "@/components/hub/home/WidgetGrid";
+import { WidgetStream, WidgetSkeleton } from "@/components/hub/home/widgets/WidgetStream";
+import { getLayout } from "@/lib/hub/layout-actions";
+import { dashboard, hubSnapshot, listOrders, listPromotions, listRedemptions } from "@/lib/store/engine";
 import { promotionRow } from "@/lib/hub/promotions/summary";
+import { WIDGET_IDS } from "@/lib/hub/metrics";
+import { formatINR } from "@/lib/money";
+
+export const dynamic = "force-dynamic";
 
 export default async function SellerHome() {
-  const [data, orders, redemptions, promotions] = await Promise.all([
-    dashboard(),
-    listOrders(),
-    listRedemptions(),
+  const [layout, snapshot, promotions, redemptions, orders, data] = await Promise.all([
+    getLayout(),
+    hubSnapshot(),
     listPromotions(),
+    listRedemptions(),
+    listOrders(),
+    dashboard(),
   ]);
-  const today = new Date().toISOString().slice(0, 10);
-  const live = orders.filter((order) => !["cancelled", "payment_failed"].includes(order.status));
-  const todayOrders = live.filter((order) => order.createdAt.slice(0, 10) === today);
-  const revenue = todayOrders.reduce((sum, order) => sum + order.totalPaise, 0);
-  const discountGiven = redemptions
-    .filter((row) => row.releasedAt === null)
-    .reduce((sum, row) => sum + row.discountPaise, 0);
-  const open = data.orders.filter((order) => order.needsAttention).length;
+  const revision = [snapshot.orders.length, snapshot.orders.reduce((last, row) => row.updatedAt > last ? row.updatedAt : last, ""), snapshot.returns.map((row) => row.status).join(","), snapshot.reviews.map((row) => row.status).join(","), snapshot.payments.length, Object.values(snapshot.stock).reduce((sum, row) => sum + row.onHand + row.reserved, 0)].join("|");
+  const needsAttention = data.orders.filter((order) => order.needsAttention).length;
   return (
-    <div>
-      <h1 className="text-hub-title font-display">Overview</h1>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Ordered sales today" value={formatINR(revenue)} />
-        <Kpi label="Orders today" value={String(todayOrders.length)} />
-        <Kpi label="Needs attention" value={String(open)} />
-        <Kpi label="Discount given" value={formatINR(discountGiven)} />
+    <section>
+      <div className="mb-9 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="font-mono text-eyebrow uppercase tracking-widest text-aqua">Aqualite / Seller Hub</p>
+          <h1 className="mt-3 font-display text-h2">Your day, <em>at a glance.</em></h1>
+          <p className="mt-3 text-small text-mist">What needs you now, and how we&rsquo;re doing.</p>
+        </div>
+        <p className="font-mono text-eyebrow uppercase text-mist">Live operations · India Standard Time</p>
       </div>
+      {needsAttention > 0 ? (
+        <p className="mb-6 rounded-hub border border-warning/50 bg-warning-tint px-4 py-3 text-hub-body">
+          {needsAttention} order{needsAttention > 1 ? "s need" : " needs"} attention &mdash; payment captured but stock could not be reserved.{" "}
+          <Link href="/admin/orders" className="font-medium text-red-ink">Review orders &rarr;</Link>
+        </p>
+      ) : null}
+      <WidgetGrid initial={layout} initialRevision={revision}>
+        {WIDGET_IDS.map((id) => (
+          <Suspense key={id} fallback={<WidgetSkeleton id={id} />}>
+            <WidgetStream id={id} />
+          </Suspense>
+        ))}
+      </WidgetGrid>
 
       <h2 className="mt-10 text-hub-section font-semibold">Jump in</h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -58,16 +75,7 @@ export default async function SellerHome() {
           </ul>
         </>
       ) : null}
-    </div>
-  );
-}
-
-function Kpi({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-hub border border-hairline bg-paper p-5">
-      <p className="font-mono text-hub-label uppercase text-muted">{label}</p>
-      <p className="mt-2 text-hub-kpi font-semibold tabular">{value}</p>
-    </div>
+    </section>
   );
 }
 

@@ -22,7 +22,7 @@ export async function GET(
   const clean = name.replace(/[^A-Za-z0-9._-]/g, "");
   const ext = clean.split(".").pop() ?? "";
   const type = EXT_TO_TYPE[ext];
-  if (!clean.startsWith("desktop-") && !clean.startsWith("mobile-")) {
+  if (!clean.startsWith("desktop-") && !clean.startsWith("mobile-") && !clean.startsWith("catalog-")) {
     return new NextResponse("Not found", { status: 404 });
   }
   if (!type) return new NextResponse("Not found", { status: 404 });

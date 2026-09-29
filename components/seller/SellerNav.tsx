@@ -7,6 +7,9 @@ import { cn } from "@/lib/cn";
 
 const NAV: { href: string; label: string; match: RegExp }[] = [
   { href: "/seller", label: "Overview", match: /^\/seller$/ },
+  { href: "/seller/catalog/inventory", label: "Catalog", match: /^\/seller\/catalog/ },
+  { href: "/seller/inventory/planning", label: "Planning", match: /^\/seller\/inventory/ },
+  { href: "/seller/pricing", label: "Pricing", match: /^\/seller\/pricing/ },
   { href: "/seller/promotions", label: "Promotions", match: /^\/seller\/promotions/ },
   { href: "/seller/reports/business", label: "Reports", match: /^\/seller\/reports\/business|^\/seller\/reports\/tax/ },
   { href: "/seller/reports/payments", label: "Payments", match: /^\/seller\/reports\/payments/ },

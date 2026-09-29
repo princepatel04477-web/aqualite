@@ -4,7 +4,7 @@ import { HomeView } from "@/components/home/HomeView";
 import { getHeroSlides } from "@/lib/catalog/hero";
 import { allCards, getFeatured } from "@/lib/catalog/queries";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 /** H06: phones get the stacked mobile hero straight from the server. */
 async function initialMobileFromUA(): Promise<boolean> {

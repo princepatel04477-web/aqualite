@@ -117,6 +117,7 @@ export type ProductCardModel = {
   soldOut: boolean;
   colorways: CardColorway[];
   features: Feature[];
+  keywords: string[];
   isNew: boolean;
   /** Storefront badge for an active automatic promotion, e.g. "Extra 10% off in bag". */
   promoLabel?: string | null;
