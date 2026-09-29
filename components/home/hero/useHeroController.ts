@@ -54,12 +54,16 @@ export function useHeroController(
   const [mountedImages, setMountedImages] = useState<Set<number>>(() => new Set(count > 0 ? [0] : []));
 
   const activeIndexRef = useRef(0);
-  activeIndexRef.current = activeIndex;
   const progressRef = useRef(0);
   const progressListeners = useRef(new Set<(value: number) => void>());
   const interactedRef = useRef(false);
   const slidesRef = useRef(slides);
-  slidesRef.current = slides;
+  /* Latest-value refs are synced in an effect (callbacks/GSAP read them
+     post-commit, so timing is unchanged for every consumer). */
+  useEffect(() => {
+    activeIndexRef.current = activeIndex;
+    slidesRef.current = slides;
+  }, [activeIndex, slides]);
 
   const onProgress = useCallback((listener: (value: number) => void) => {
     progressListeners.current.add(listener);

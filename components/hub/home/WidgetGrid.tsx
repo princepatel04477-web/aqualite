@@ -35,11 +35,12 @@ export function WidgetGrid({ initial, initialRevision, children }: { initial: Wi
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
   const revision = useRef(initialRevision);
-  const [now, setNow] = useState(Date.now());
-  const [updated, setUpdated] = useState(Date.now());
+  const [now, setNow] = useState(0);
+  const [updated, setUpdated] = useState(0);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
   const items = Children.toArray(children);
   useEffect(() => {
+    const mounted = window.setTimeout(() => { setNow(Date.now()); setUpdated(Date.now()); }, 0);
     let inFlight = false;
     const clock = window.setInterval(() => setNow(Date.now()), 10000);
     const poll = window.setInterval(async () => {
@@ -54,7 +55,7 @@ export function WidgetGrid({ initial, initialRevision, children }: { initial: Wi
         }
       } finally { inFlight = false; }
     }, 3000);
-    return () => { window.clearInterval(clock); window.clearInterval(poll); };
+    return () => { window.clearTimeout(mounted); window.clearInterval(clock); window.clearInterval(poll); };
   }, [router]);
   function change(next: WidgetSetting[]) {
     const previous = layout;

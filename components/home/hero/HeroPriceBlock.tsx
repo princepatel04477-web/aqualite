@@ -24,9 +24,13 @@ export function HeroPriceBlock({ slide, variant = "block" }: { slide: HeroSlide;
   const wrapRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
+  /* Close the size popover when the slide changes — guarded render-time
+     adjustment (React's recommended alternative to setState-in-effect). */
+  const [prevSlideId, setPrevSlideId] = useState(slide.id);
+  if (prevSlideId !== slide.id) {
+    setPrevSlideId(slide.id);
     setOpen(false);
-  }, [slide.id]);
+  }
 
   useEffect(() => {
     if (!open) return;

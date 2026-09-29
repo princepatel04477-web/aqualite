@@ -24,7 +24,7 @@ Five-scene home showcase: **01 Tide Slide · 02 Pearl Slide · 03 Cove Clog · 0
 | Gate | Result |
 | --- | --- |
 | `pnpm typecheck` (`tsc --noEmit`) | clean |
-| `pnpm lint` (`next lint`) | clean — no warnings/errors |
+| `npm run lint` (`eslint .`; at H06: `pnpm lint` / `next lint`) | clean — no warnings/errors |
 | `pnpm test` (vitest, isolated store) | **47/47** — pricing 6 · hero-validation 11 · hero-store 5 · hero-machine 25 |
 | SSR `/` desktop | 200 — stacked scenes, `grid-area-stack`, band, 5 tabs, counter "01 — 05", per-slide CTAs |
 | SSR `/` mobile UA (iPhone) | 200 — `data-hero-mobile` tree, no desktop stack, compact snap tablist (5 tabs), price line, 48 px CTA grid, first-sentence lead, glow layer, **no wave clip**, only the slide-1 mobile image eager with `fetchPriority="high"` |

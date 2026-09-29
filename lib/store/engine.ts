@@ -1448,7 +1448,10 @@ export function setListingStatus(ids: string[], active: boolean, actor: string):
     const valid = new Set(allProducts(state).flatMap((row) => row.colorways.flatMap((color) => color.variants.map((variant) => variant.id))));
     if (ids.some((id) => !valid.has(id))) return fail("NOT_FOUND");
     const inactive = new Set(state.inactiveVariants);
-    for (const id of ids) active ? inactive.delete(id) : inactive.add(id);
+    for (const id of ids) {
+      if (active) inactive.delete(id);
+      else inactive.add(id);
+    }
     state.inactiveVariants = [...inactive];
     state.audit.push({ id: uid("aud"), actorId: actor, action: active ? "activate_listings" : "deactivate_listings", entity: "variant", entityId: ids.join(","), diff: { ids }, at: nowIso() });
     return ok({ updated: ids.length });

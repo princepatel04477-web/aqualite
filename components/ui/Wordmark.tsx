@@ -5,18 +5,18 @@ import { cn } from "@/lib/cn";
 export function Wordmark({
   className,
   href = "/",
-  tone = "foam",
+  tone = "red",
 }: {
   className?: string;
   href?: string;
-  tone?: "foam" | "ink";
+  tone?: "red" | "ink";
 }) {
   return (
     <Link
       href={href}
       className={cn(
         "font-display text-logo tracking-tight",
-        tone === "ink" ? "text-ink-on-porcelain" : "text-foam",
+        tone === "ink" ? "text-ink" : "text-red",
         className,
       )}
     >

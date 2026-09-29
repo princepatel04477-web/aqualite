@@ -12,8 +12,8 @@ export function Eyebrow({
   className?: string;
 }) {
   return (
-    <p className={cn("font-mono text-eyebrow uppercase text-mist", className)}>
-      {index ? <span className="text-aqua">{total ? `${index} / ${total}` : index}</span> : null}
+    <p className={cn("font-mono text-eyebrow uppercase text-muted", className)}>
+      {index ? <span className="text-red">{total ? `${index} / ${total}` : index}</span> : null}
       {index ? <span> — </span> : null}
       {children}
     </p>

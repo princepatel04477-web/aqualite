@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 
 import { spring } from "@/lib/motion/tokens";
@@ -8,9 +7,10 @@ import { useMotionPolicy } from "@/lib/motion/use-motion-policy";
 
 export function RollingDigits({ value }: { value: number }) {
   const { reduced } = useMotionPolicy();
-  const text = String(Math.max(0, value));
-  const [shown, setShown] = useState(text);
-  useEffect(() => setShown(text), [text]);
+  /* The roll target is the value itself: `motion.span` animates `y` from its
+     current position to the new digit on every change (initial={false}), so
+     no mirrored state/effect is needed. */
+  const shown = String(Math.max(0, value));
   if (reduced) return <span className="tabular">{shown}</span>;
   return (
     <span className="inline-flex overflow-hidden tabular" aria-label={shown}>

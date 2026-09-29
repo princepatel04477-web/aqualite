@@ -19,20 +19,41 @@ const config: Config = {
     },
     extend: {
       colors: {
+        /* IVORY & RED v2 — channel tokens (all values owned by styles/tokens.css) */
+        ivory: color("ivory"),
+        paper: color("paper"),
+        linen: color("linen"),
+        porcelain: color("porcelain"),
+        hairline: color("hairline"),
+        rule: color("rule"),
+        ink: color("ink"),
+        "ink-2": color("ink-2"),
+        muted: color("muted"),
+        red: color("red"),
+        "red-deep": color("red-deep"),
+        "red-ink": color("red-ink"),
+        "red-tint": color("red-tint"),
+        "on-red": color("on-red"),
+        success: color("success"),
+        "success-tint": color("success-tint"),
+        warning: color("warning"),
+        "warning-tint": color("warning-tint"),
+        danger: color("danger"),
+        "danger-tint": color("danger-tint"),
+        info: color("info"),
+        "info-tint": color("info-tint"),
+        /* TEMPORARY legacy Deep Water names — resolve through the alias layer
+           in styles/tokens.css. Delete each entry as S02/S04 removes the last
+           class using it (npm run tokens:check lists what is left). */
         abyss: color("abyss"),
         trench: color("trench"),
         shelf: color("shelf"),
-        hairline: color("hairline"),
         foam: color("foam"),
         mist: color("mist"),
         aqua: color("aqua"),
         "aqua-deep": color("aqua-deep"),
         sand: color("sand"),
-        porcelain: color("porcelain"),
         "ink-on-porcelain": color("ink-on-porcelain"),
-        success: color("success"),
-        warning: color("warning"),
-        danger: color("danger"),
       },
       fontFamily: {
         display: ["var(--font-display)", "Georgia", "serif"],
@@ -67,6 +88,16 @@ const config: Config = {
       borderRadius: {
         panel: "var(--radius-panel)",
         pill: "var(--radius-pill)",
+        hub: "var(--radius-hub)",
+        control: "var(--radius-control)",
+      },
+      boxShadow: {
+        1: "var(--shadow-1)",
+        2: "var(--shadow-2)",
+        3: "var(--shadow-3)",
+      },
+      borderColor: {
+        DEFAULT: "rgb(var(--rule) / <alpha-value>)",
       },
       zIndex: {
         base: "0",

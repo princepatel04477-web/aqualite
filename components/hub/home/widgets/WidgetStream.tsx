@@ -1,6 +1,6 @@
 import { widgetTitles } from "@/lib/hub/widget-config";
 import { WidgetCard } from "@/components/hub/home/widgets/WidgetCard";
-import { loadWidget, type WidgetId } from "@/lib/hub/metrics";
+import { loadWidget, type WidgetData, type WidgetId } from "@/lib/hub/metrics";
 
 export function WidgetSkeleton({ id }: { id: WidgetId }) {
   return (
@@ -12,10 +12,8 @@ export function WidgetSkeleton({ id }: { id: WidgetId }) {
 }
 
 export async function WidgetStream({ id }: { id: WidgetId }) {
-  try {
-    const data = await loadWidget(id);
-    return <WidgetCard id={id} initial={data} />;
-  } catch {
-    return <WidgetCard id={id} initial={null} />;
-  }
+  let data: WidgetData | null;
+  try { data = await loadWidget(id); }
+  catch { data = null; }
+  return <WidgetCard id={id} initial={data} />;
 }

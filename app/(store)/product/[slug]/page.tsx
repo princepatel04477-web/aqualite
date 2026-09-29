@@ -88,7 +88,7 @@ export default async function ProductPage({
             </p>
           ) : null}
           <div className="mt-8">
-            <BuyBox product={data.product} color={colorway.slug} size={sizeParam} stock={data.stock} />
+            <BuyBox product={data.product} color={colorway.slug} size={sizeParam} stock={data.stock} clockAt={new Date().toISOString()} />
           </div>
           <div className="mt-10 divide-y divide-hairline border-y border-hairline">
             <details className="py-4" open>

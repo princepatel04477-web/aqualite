@@ -16,11 +16,13 @@ export function BuyBox({
   color,
   size,
   stock,
+  clockAt,
 }: {
   product: CatalogProduct;
   color: string;
   size?: string;
   stock: Record<string, number>;
+  clockAt: string;
 }) {
   const router = useRouter();
   const { add } = useCart();
@@ -30,12 +32,10 @@ export function BuyBox({
   const [pin, setPin] = useState("");
   const [eta, setEta] = useState("");
   const [adding, setAdding] = useState(false);
-  const [priceClock, setPriceClock] = useState(() => Date.now());
-  if (!colorway) return null;
+  const [priceClock, setPriceClock] = useState(() => Date.parse(clockAt));
   const availableOf = (id: string) => stock[id] ?? 0;
-  const selected = size ? colorway.variants.find((variant) => String(variant.sizeUk) === size) : undefined;
-  const price = selected ?? colorway.variants[0];
-  useEffect(() => setPriceClock(Date.now()), [price?.id]);
+  const selected = size ? colorway?.variants.find((variant) => String(variant.sizeUk) === size) : undefined;
+  const price = selected ?? colorway?.variants[0];
   useEffect(() => {
     const next = [price?.saleStartsAt, price?.saleEndsAt].filter((value): value is string => !!value)
       .map((value) => Date.parse(value)).filter((time) => time > Date.now()).sort((a, b) => a - b)[0];
@@ -43,6 +43,8 @@ export function BuyBox({
     const timer = window.setTimeout(() => setPriceClock(Date.now()), Math.max(1, next - Date.now() + 1));
     return () => window.clearTimeout(timer);
   }, [price?.saleStartsAt, price?.saleEndsAt, priceClock]);
+
+  if (!colorway) return null;
 
   return (
     <div>
@@ -72,6 +74,7 @@ export function BuyBox({
               className={`h-12 rounded-pill border font-mono text-size ${active ? "border-foam bg-foam text-abyss" : "border-hairline"} ${sold ? "text-mist line-through" : ""}`}
               onClick={() => {
                 setMessage("");
+                setPriceClock(Date.now());
                 router.replace(`/product/${product.slug}?color=${colorway.slug}&size=${variant.sizeUk}`, { scroll: false });
               }}
             >
