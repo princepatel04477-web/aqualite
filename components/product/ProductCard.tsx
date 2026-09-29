@@ -26,10 +26,15 @@ export function ProductCard({ card, tone = "dark" }: { card: ProductCardModel; t
           <img src={active.image} alt="" className="h-full w-full object-cover transition-transform duration-slow ease-tide group-hover:scale-[1.04]" />
           <span className="card-sheen pointer-events-none absolute inset-0 z-[2]" aria-hidden="true" />
         </Link>
-        <div className="pointer-events-none absolute left-3 top-3 z-[2] flex flex-col gap-1">
+        <div className="pointer-events-none absolute left-3 top-3 z-[2] flex flex-col items-start gap-1">
           {card.tags.map((tag) => (
             <Tag key={tag}>{tag}</Tag>
           ))}
+          {card.promoLabel && !card.soldOut ? (
+            <span className="rounded-pill bg-red px-2 py-0.5 font-mono text-eyebrow uppercase text-on-red">
+              {card.promoLabel}
+            </span>
+          ) : null}
         </div>
         <div className="absolute bottom-3 right-3 z-[2]">
           <button

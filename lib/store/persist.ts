@@ -3,7 +3,11 @@ import "server-only";
 import fs from "node:fs";
 import path from "node:path";
 
-const DATA_PATH = path.join(process.cwd(), ".data", "store.json");
+// Unit tests point this at their own directory (vitest.config.ts) so they can
+// never touch the dev server's store.
+const DATA_PATH = process.env.AQUALITE_DATA_PATH
+  ? path.join(process.env.AQUALITE_DATA_PATH, "store.json")
+  : path.join(process.cwd(), ".data", "store.json");
 const STATE_ROW_ID = 1;
 
 type StoreDatabase = {
