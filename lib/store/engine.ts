@@ -114,6 +114,7 @@ type State = {
   heroSlides: HeroSlideRow[];
   settings: Settings;
   inactiveVariants: string[];
+  hubLayouts: Record<string, unknown>;
 };
 
 const defaultSettings = (): Settings => ({
@@ -157,6 +158,7 @@ function emptyState(): State {
     heroSlides: [],
     settings: defaultSettings(),
     inactiveVariants: [],
+    hubLayouts: {},
   };
 }
 
@@ -1271,6 +1273,41 @@ export function createReturn(input: {
 
 export function listReturns(): Promise<ReturnReq[]> {
   return withStore((state) => state.returns);
+}
+
+// Read-only Seller Hub snapshot. Unlike dashboard(), this never rewrites the
+// entire D1 JSON document for a read, so parallel RSC boundaries can resolve
+// independently. The engine remains the live source of truth until cutover.
+export async function hubSnapshot(): Promise<{
+  orders: Order[];
+  reviews: StoredReview[];
+  returns: ReturnReq[];
+  stock: Record<string, Stock>;
+  payments: State["payments"];
+  products: CatalogProduct[];
+  outbox: EmailOut[];
+}> {
+  const state = await load();
+  return {
+    orders: state.orders,
+    reviews: state.reviews,
+    returns: state.returns,
+    stock: state.stock,
+    payments: state.payments,
+    products: allProducts(state),
+    outbox: state.outbox,
+  };
+}
+
+export function readHubLayout(userId: string): Promise<unknown> {
+  return load().then((state) => state.hubLayouts?.[userId] ?? null);
+}
+
+export function writeHubLayout(userId: string, layout: unknown): Promise<void> {
+  return withStore((state) => {
+    state.hubLayouts ??= {};
+    state.hubLayouts[userId] = layout;
+  });
 }
 
 export function dashboard(): Promise<{

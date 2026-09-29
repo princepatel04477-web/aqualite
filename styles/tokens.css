@@ -93,3 +93,22 @@
     --header-h: 4rem;
   }
 }
+
+/* Seller Hub surface (scoped until the storefront re-theme phase). */
+.seller-hub {
+  --abyss: 250 248 243;
+  --trench: 255 253 249;
+  --shelf: 255 255 255;
+  --hairline: 223 214 205;
+  --foam: 52 37 36;
+  --mist: 117 101 96;
+  --aqua: 171 39 48;
+  --aqua-deep: 133 28 38;
+  --porcelain: 255 253 249;
+  --success: 35 113 77;
+  --warning: 157 91 21;
+  --danger: 175 42 49;
+  --red-tint: 255 231 230;
+  color: rgb(var(--foam));
+  background: rgb(var(--abyss));
+}
