@@ -103,7 +103,7 @@ export function topProductMetrics(orders: Order[], now: Date): ProductRow[] {
   return [...rows.values()].sort((a, b) => b.revenuePaise - a.revenuePaise).slice(0, 5);
 }
 
-export function inventoryMetrics(products: CatalogProduct[], stock: Record<string, { onHand: number; reserved: number }>, orders: Order[], now: Date): CountLink[] {
+export function inventoryMetrics(products: CatalogProduct[], stock: Record<string, { onHand: number; reserved: number }>, orders: Order[], now: Date, lowStockDays = 17): CountLink[] {
   let out = 0;
   let low = 0;
   let suppressed = 0;
@@ -120,14 +120,14 @@ export function inventoryMetrics(products: CatalogProduct[], stock: Record<strin
       for (const variant of colorway.variants) {
         const available = Math.max(0, (stock[variant.id]?.onHand ?? variant.stock) - (stock[variant.id]?.reserved ?? 0));
         if (!available) out++;
-        else if ((sold.get(variant.id) ?? 0) > 0 && available / ((sold.get(variant.id) ?? 0) / 30) <= 17) low++;
+        else if ((sold.get(variant.id) ?? 0) > 0 && available / ((sold.get(variant.id) ?? 0) / 30) <= lowStockDays) low++;
       }
     }
   }
   return [
-    { label: "Out of stock SKUs", count: out, href: "/admin/inventory?filter=out" },
-    { label: "Low stock · ≤17 days cover", count: low, href: "/admin/inventory?filter=low" },
-    { label: "Suppressed listings", count: suppressed, href: "/admin/inventory?filter=suppressed" },
+    { label: "Out of stock SKUs", count: out, href: "/seller/catalog/inventory?filter=out" },
+    { label: `Low stock · ≤${lowStockDays} days cover`, count: low, href: "/seller/catalog/inventory?filter=low" },
+    { label: "Suppressed listings", count: suppressed, href: "/seller/catalog/inventory?filter=suppressed" },
   ];
 }
 
@@ -143,7 +143,7 @@ export async function loadWidget(id: WidgetId, now = new Date()): Promise<Widget
       { label: "Reviews pending moderation", count: snapshot.reviews.filter((row) => row.status === "pending").length, href: "/admin" },
       { label: "Buyer messages >24h", count: null, href: "/admin" },
     ] };
-    case "inventory": return { kind: id, value: inventoryMetrics(snapshot.products, snapshot.stock, snapshot.orders, now), updatedAt };
+    case "inventory": return { kind: id, value: inventoryMetrics(snapshot.products, snapshot.stock, snapshot.orders, now, (snapshot.settings.leadTimeDays ?? 10) + 7), updatedAt };
     case "health": {
       const recent = snapshot.orders.filter((row) => istDay(row.createdAt) >= istDay(now) - 29);
       const cancellations = recent.filter((row) => row.status === "cancelled").length;

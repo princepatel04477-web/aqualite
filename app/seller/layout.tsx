@@ -14,7 +14,9 @@ export default async function SellerLayout({ children }: { children: React.React
           <div className="flex items-center gap-5"><Wordmark /><span className="border-l border-hairline pl-5 font-mono text-eyebrow uppercase tracking-widest text-mist">Seller Hub</span></div>
           <nav aria-label="Seller navigation" className="flex items-center gap-5 text-small font-medium">
             <Link href="/seller" aria-current="page" className="text-aqua">Overview</Link>
-            <Link href="/admin/inventory">Inventory</Link>
+            <Link href="/seller/catalog/inventory">Catalog</Link>
+            <Link href="/seller/inventory/planning">Planning</Link>
+            <Link href="/seller/pricing">Pricing</Link>
             <Link href="/admin/orders">Orders</Link>
             <Link href="/">Visit store ↗</Link>
           </nav>

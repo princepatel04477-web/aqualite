@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useCart } from "@/components/cart/CartProvider";
 import { Button } from "@/components/ui/Button";
 import { Price } from "@/components/ui/Price";
 import type { CatalogProduct } from "@/content/catalog";
+import { effectivePrice } from "@/lib/hub/pricing/effective";
 import { deliveryLabel, lookupPincode } from "@/lib/store/pincode";
 
 export function BuyBox({
@@ -29,10 +30,19 @@ export function BuyBox({
   const [pin, setPin] = useState("");
   const [eta, setEta] = useState("");
   const [adding, setAdding] = useState(false);
+  const [priceClock, setPriceClock] = useState(() => Date.now());
   if (!colorway) return null;
   const availableOf = (id: string) => stock[id] ?? 0;
   const selected = size ? colorway.variants.find((variant) => String(variant.sizeUk) === size) : undefined;
-  const price = colorway.variants[0];
+  const price = selected ?? colorway.variants[0];
+  useEffect(() => setPriceClock(Date.now()), [price?.id]);
+  useEffect(() => {
+    const next = [price?.saleStartsAt, price?.saleEndsAt].filter((value): value is string => !!value)
+      .map((value) => Date.parse(value)).filter((time) => time > Date.now()).sort((a, b) => a - b)[0];
+    if (!next) return;
+    const timer = window.setTimeout(() => setPriceClock(Date.now()), Math.max(1, next - Date.now() + 1));
+    return () => window.clearTimeout(timer);
+  }, [price?.saleStartsAt, price?.saleEndsAt, priceClock]);
 
   return (
     <div>
@@ -48,7 +58,7 @@ export function BuyBox({
           />
         ))}
       </div>
-      {price ? <Price className="mt-6" paise={price.pricePaise} mrpPaise={price.mrpPaise} tax size="lg" /> : null}
+      {price ? <Price className="mt-6" paise={effectivePrice(price, new Date(priceClock))} mrpPaise={price.mrpPaise} tax size="lg" /> : null}
       <p className="mt-8 font-mono text-eyebrow uppercase text-mist">UK size</p>
       <div className={`mt-3 grid grid-cols-4 gap-2 ${shake ? "animate-shake" : ""}`}>
         {colorway.variants.map((variant) => {

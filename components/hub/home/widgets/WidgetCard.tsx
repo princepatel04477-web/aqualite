@@ -10,8 +10,8 @@ import type { CountLink, WidgetData, WidgetId } from "@/lib/hub/metrics";
 import { formatINR } from "@/lib/money";
 
 const viewLinks: Record<WidgetId, string> = {
-  sales: "/admin/orders", orders: "/admin/orders", action: "/admin/orders", inventory: "/admin/inventory",
-  health: "/seller", payments: "/seller", products: "/admin/inventory", notifications: "/admin/orders",
+  sales: "/admin/orders", orders: "/admin/orders", action: "/admin/orders", inventory: "/seller/catalog/inventory",
+  health: "/seller", payments: "/seller", products: "/seller/catalog/inventory", notifications: "/admin/orders",
 };
 
 function TimeLabel({ at }: { at: string }) {

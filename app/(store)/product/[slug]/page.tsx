@@ -12,7 +12,7 @@ import { products } from "@/content/catalog";
 import { getProduct } from "@/lib/catalog/queries";
 import { formatINR } from "@/lib/money";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return products.map((product) => ({ slug: product.slug }));
@@ -23,8 +23,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const data = await getProduct(slug);
   if (!data) return { title: "Product" };
   return {
-    title: data.product.name,
-    description: data.product.subtitle,
+    title: data.product.seoTitle || data.product.name,
+    description: data.product.seoDescription || data.product.subtitle,
   };
 }
 

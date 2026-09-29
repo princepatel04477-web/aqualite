@@ -51,7 +51,7 @@ export function searchProducts(cards: ProductCardModel[], query: string): { item
   const terms = expand(query);
   const scored = cards
     .map((card) => {
-      const hay = `${card.name} ${card.subtitle} ${card.category} ${card.categorySlug} ${card.gender}`.toLowerCase();
+      const hay = `${card.name} ${card.subtitle} ${card.category} ${card.categorySlug} ${card.gender} ${card.keywords.join(" ")}`.toLowerCase();
       let score = 0;
       terms.forEach((term) => {
         if (hay.includes(term)) score += 5;

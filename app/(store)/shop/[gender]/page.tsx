@@ -6,7 +6,7 @@ import { GENDERS, type Gender } from "@/content/catalog";
 import { parseListing } from "@/lib/catalog/filters";
 import { listProducts } from "@/lib/catalog/queries";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return GENDERS.filter((gender) => gender !== "unisex").map((gender) => ({ gender }));

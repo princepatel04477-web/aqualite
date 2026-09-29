@@ -308,3 +308,13 @@
 @media (max-width: 639px) {
   .seller-hub .hub-card-sales { min-height: 48rem; }
 }
+.seller-hub .hub-input {
+  display: block;
+  max-width: 100%;
+  margin-top: var(--space-1);
+  border: 1px solid rgb(var(--hairline));
+  padding: 0.5rem 0.75rem;
+  background: rgb(var(--porcelain));
+  color: rgb(var(--foam));
+  font-variant-numeric: tabular-nums;
+}
