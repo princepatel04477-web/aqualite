@@ -5,7 +5,7 @@ import { parseListing } from "@/lib/catalog/filters";
 import { listProducts } from "@/lib/catalog/queries";
 
 export const metadata: Metadata = { title: "Shop", description: "Men's, women's and kids' Aqualite footwear." };
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export default async function ShopPage({
   searchParams,

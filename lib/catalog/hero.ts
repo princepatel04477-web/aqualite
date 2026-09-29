@@ -1,8 +1,8 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
 
 import type { HeroSlide } from "@/lib/commerce/types";
+import { effectivePrice } from "@/lib/hub/pricing/effective";
 import { availabilityMap, catalogProducts, getHeroSlideRows } from "@/lib/store/engine";
 
 /**
@@ -35,7 +35,7 @@ async function loadHeroSlides(): Promise<HeroSlide[]> {
   return located.flatMap(({ row, product, colorway }) => {
     const buyable = colorway.variants.filter((variant) => (stock[variant.id] ?? 0) > 0);
     if (buyable.length === 0) return [];
-    const cheapest = buyable.reduce((min, variant) => (variant.pricePaise < min.pricePaise ? variant : min));
+    const cheapest = buyable.reduce((min, variant) => (effectivePrice(variant) < effectivePrice(min) ? variant : min));
     const slide: HeroSlide = {
       id: row.id,
       sort: row.sort,
@@ -57,7 +57,7 @@ async function loadHeroSlides(): Promise<HeroSlide[]> {
         colorwayId: colorway.id,
         colorwaySlug: colorway.slug,
         colorwayName: colorway.name,
-        pricePaise: cheapest.pricePaise,
+        pricePaise: effectivePrice(cheapest),
         mrpPaise: cheapest.mrpPaise,
         thumbnail: colorway.images[0]?.src ?? "",
         inStock: true,
@@ -73,6 +73,5 @@ async function loadHeroSlides(): Promise<HeroSlide[]> {
   });
 }
 
-/** Cached under the "hero" tag (also dropped by catalog edits); 300s ceiling. */
-export const getHeroSlides = (): Promise<HeroSlide[]> =>
-  unstable_cache(loadHeroSlides, ["hero-slides"], { revalidate: 300, tags: ["hero", "catalog"] })();
+/** Read live offers so sale boundaries take effect at the exact request instant. */
+export const getHeroSlides = loadHeroSlides;

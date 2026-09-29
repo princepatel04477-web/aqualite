@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useCart } from "@/components/cart/CartProvider";
 import { Button } from "@/components/ui/Button";
 import { Price } from "@/components/ui/Price";
 import type { CatalogProduct } from "@/content/catalog";
+import { effectivePrice } from "@/lib/hub/pricing/effective";
 import { deliveryLabel, lookupPincode } from "@/lib/store/pincode";
 
 export function BuyBox({
@@ -15,11 +16,13 @@ export function BuyBox({
   color,
   size,
   stock,
+  clockAt,
 }: {
   product: CatalogProduct;
   color: string;
   size?: string;
   stock: Record<string, number>;
+  clockAt: string;
 }) {
   const router = useRouter();
   const { add } = useCart();
@@ -29,10 +32,19 @@ export function BuyBox({
   const [pin, setPin] = useState("");
   const [eta, setEta] = useState("");
   const [adding, setAdding] = useState(false);
-  if (!colorway) return null;
+  const [priceClock, setPriceClock] = useState(() => Date.parse(clockAt));
   const availableOf = (id: string) => stock[id] ?? 0;
-  const selected = size ? colorway.variants.find((variant) => String(variant.sizeUk) === size) : undefined;
-  const price = colorway.variants[0];
+  const selected = size ? colorway?.variants.find((variant) => String(variant.sizeUk) === size) : undefined;
+  const price = selected ?? colorway?.variants[0];
+  useEffect(() => {
+    const next = [price?.saleStartsAt, price?.saleEndsAt].filter((value): value is string => !!value)
+      .map((value) => Date.parse(value)).filter((time) => time > Date.now()).sort((a, b) => a - b)[0];
+    if (!next) return;
+    const timer = window.setTimeout(() => setPriceClock(Date.now()), Math.max(1, next - Date.now() + 1));
+    return () => window.clearTimeout(timer);
+  }, [price?.saleStartsAt, price?.saleEndsAt, priceClock]);
+
+  if (!colorway) return null;
 
   return (
     <div>
@@ -48,7 +60,7 @@ export function BuyBox({
           />
         ))}
       </div>
-      {price ? <Price className="mt-6" paise={price.pricePaise} mrpPaise={price.mrpPaise} tax size="lg" /> : null}
+      {price ? <Price className="mt-6" paise={effectivePrice(price, new Date(priceClock))} mrpPaise={price.mrpPaise} tax size="lg" /> : null}
       <p className="mt-8 font-mono text-eyebrow uppercase text-mist">UK size</p>
       <div className={`mt-3 grid grid-cols-4 gap-2 ${shake ? "animate-shake" : ""}`}>
         {colorway.variants.map((variant) => {
@@ -62,6 +74,7 @@ export function BuyBox({
               className={`h-12 rounded-pill border font-mono text-size ${active ? "border-foam bg-foam text-abyss" : "border-hairline"} ${sold ? "text-mist line-through" : ""}`}
               onClick={() => {
                 setMessage("");
+                setPriceClock(Date.now());
                 router.replace(`/product/${product.slug}?color=${colorway.slug}&size=${variant.sizeUk}`, { scroll: false });
               }}
             >

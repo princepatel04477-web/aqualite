@@ -12,7 +12,7 @@ import { products } from "@/content/catalog";
 import { getProduct } from "@/lib/catalog/queries";
 import { formatINR } from "@/lib/money";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return products.map((product) => ({ slug: product.slug }));
@@ -23,8 +23,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const data = await getProduct(slug);
   if (!data) return { title: "Product" };
   return {
-    title: data.product.name,
-    description: data.product.subtitle,
+    title: data.product.seoTitle || data.product.name,
+    description: data.product.seoDescription || data.product.subtitle,
   };
 }
 
@@ -88,7 +88,7 @@ export default async function ProductPage({
             </p>
           ) : null}
           <div className="mt-8">
-            <BuyBox product={data.product} color={colorway.slug} size={sizeParam} stock={data.stock} />
+            <BuyBox product={data.product} color={colorway.slug} size={sizeParam} stock={data.stock} clockAt={new Date().toISOString()} />
           </div>
           <div className="mt-10 divide-y divide-hairline border-y border-hairline">
             <details className="py-4" open>

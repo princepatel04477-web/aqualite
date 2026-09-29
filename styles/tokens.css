@@ -165,9 +165,14 @@
   }
 }
 
+/* Seller Hub uses the same Ivory & Red design tokens as the storefront. */
+.seller-hub {
+  color: rgb(var(--ink));
+  background: rgb(var(--ivory));
+}
+
 /* Per-slide hero glow colour (data, set inline at runtime). @property needs
-   a literal initial value — the token file is the only place literals live.
-   inherits: true so descendants pick up the slide's inline --hero-glow. */
+   a literal initial value — the token file is the only place literals live. */
 @property --hero-glow {
   syntax: "<color>";
   inherits: true;

@@ -6,7 +6,7 @@ import { collections } from "@/content/catalog";
 import { parseListing } from "@/lib/catalog/filters";
 import { listProducts } from "@/lib/catalog/queries";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return collections.map((collection) => ({ slug: collection.slug }));

@@ -15,7 +15,7 @@ const config = [
   ...nextVitals,
   ...nextTs,
   {
-    ignores: [".next/**", "out/**", "build/**", "dist/**", "coverage/**", ".wrangler/**", "next-env.d.ts", "cloudflare-env.d.ts"],
+    ignores: [".next/**", ".open-next/**", "out/**", "build/**", "dist/**", "coverage/**", ".wrangler/**", "next-env.d.ts", "cloudflare-env.d.ts"],
   },
   {
     linterOptions: {
@@ -24,7 +24,8 @@ const config = [
     },
   },
   {
-    /* project-wide law */
+    /* project-wide law; scope plugin rules to files Next registers them for */
+    files: ["**/*.{js,jsx,mjs,ts,tsx,mts,cts}"],
     rules: {
       "no-console": "error",
       "react-hooks/exhaustive-deps": "error",

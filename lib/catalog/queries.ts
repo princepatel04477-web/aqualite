@@ -3,13 +3,14 @@ import "server-only";
 import { CATEGORIES, collections, products as seedProducts, SIZE_CHART, type CatalogProduct } from "@/content/catalog";
 import { applyListing, type ListingParams } from "@/lib/catalog/filters";
 import type { ProductCardModel } from "@/lib/commerce/types";
+import { effectivePrice } from "@/lib/hub/pricing/effective";
 import { availabilityMap, catalogProducts, reviewsFor, stockOf } from "@/lib/store/engine";
 
 function cardFrom(product: CatalogProduct, colorwaySlug: string, stock: Record<string, number>): ProductCardModel | null {
   const colorway = product.colorways.find((item) => item.slug === colorwaySlug) ?? product.colorways[0];
-  if (!colorway) return null;
+  if (!colorway || !colorway.images.some((row) => row.role === "primary" && row.src) || colorway.images.some((row) => !row.alt.trim()) || colorway.variants.some((row) => row.pricePaise <= 0)) return null;
   const category = CATEGORIES.find((item) => item.slug === product.category);
-  const colorways = product.colorways.map((item) => {
+  const colorways = product.colorways.filter((item) => item.images.some((image) => image.role === "primary" && image.src) && item.images.every((image) => image.alt.trim()) && item.variants.length > 0 && item.variants.every((variant) => variant.pricePaise > 0)).map((item) => {
     const sizes = item.variants.map((variant) => ({
       variantId: variant.id,
       sizeUk: variant.sizeUk,
@@ -21,8 +22,8 @@ function cardFrom(product: CatalogProduct, colorwaySlug: string, stock: Record<s
       name: item.name,
       swatch: item.swatch,
       family: item.family,
-      image: item.images[0]?.src ?? "",
-      pricePaise: item.variants[0]?.pricePaise ?? 0,
+      image: item.images.find((image) => image.role === "primary")?.src ?? "",
+      pricePaise: item.variants[0] ? effectivePrice(item.variants[0]) : 0,
       mrpPaise: item.variants[0]?.mrpPaise ?? 0,
       soldOut: sizes.every((size) => size.available <= 0),
       sizes,
@@ -46,7 +47,7 @@ function cardFrom(product: CatalogProduct, colorwaySlug: string, stock: Record<s
     gender: product.gender,
     colorwaySlug: colorway.slug,
     colorwayName: colorway.name,
-    image: colorway.images[0]?.src ?? "",
+    image: colorway.images.find((image) => image.role === "primary")?.src ?? "",
     secondaryImage: secondary?.src ?? null,
     pricePaise: active.pricePaise,
     mrpPaise: active.mrpPaise,
@@ -54,6 +55,7 @@ function cardFrom(product: CatalogProduct, colorwaySlug: string, stock: Record<s
     soldOut: totalAvailable <= 0,
     colorways,
     features: product.features,
+    keywords: product.keywords ?? [],
     isNew: product.isNew,
   };
 }
@@ -66,7 +68,7 @@ async function stockFor(list: CatalogProduct[]): Promise<Record<string, number>>
 export async function allCards(): Promise<ProductCardModel[]> {
   const list = await catalogProducts();
   const stock = await stockFor(list);
-  return list.flatMap((product) =>
+  return list.filter((product) => product.isActive).flatMap((product) =>
     product.colorways.flatMap((colorway) => {
       const card = cardFrom(product, colorway.slug, stock);
       return card ? [card] : [];
@@ -100,8 +102,10 @@ export async function getNavigation() {
 
 export async function getProduct(slug: string) {
   const list = await catalogProducts();
-  const product = list.find((item) => item.slug === slug && item.isActive);
-  if (!product) return null;
+  const found = list.find((item) => item.slug === slug && item.isActive);
+  if (!found) return null;
+  const product = { ...found, colorways: found.colorways.filter((row) => row.images.some((image) => image.role === "primary" && image.src) && row.images.every((image) => image.alt.trim()) && row.variants.length > 0 && row.variants.every((variant) => variant.pricePaise > 0)) };
+  if (!product.colorways.length) return null;
   const stock = await stockFor([product]);
   const cards = await allCards();
   const related = cards

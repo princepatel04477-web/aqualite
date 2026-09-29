@@ -102,6 +102,11 @@ export type CatalogVariant = {
   mrpPaise: number;
   pricePaise: number;
   stock: number;
+  salePricePaise?: number | null;
+  saleStartsAt?: string | null;
+  saleEndsAt?: string | null;
+  costPaise?: number | null;
+  updatedAt?: string;
 };
 
 export type CatalogColorway = {
@@ -134,6 +139,10 @@ export type CatalogProduct = {
   colorways: CatalogColorway[];
   manufacturer: string;
   countryOfOrigin: string;
+  hsn?: string;
+  keywords?: string[];
+  seoTitle?: string;
+  seoDescription?: string;
   netQuantity: string;
 };
 

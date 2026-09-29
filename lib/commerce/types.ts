@@ -95,6 +95,7 @@ export type ProductCardModel = {
   soldOut: boolean;
   colorways: CardColorway[];
   features: Feature[];
+  keywords: string[];
   isNew: boolean;
 };
 

@@ -371,3 +371,37 @@
     transition: none;
   }
 }
+
+.seller-hub .hub-card {
+  min-height: 19rem;
+  height: 100%;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  border: 1px solid rgb(var(--hairline));
+  background: rgb(var(--porcelain));
+  box-shadow: 0 3px 16px rgb(var(--foam) / 0.03);
+}
+@keyframes hub-row-flash {
+  from { background: rgb(var(--red-tint)); }
+  to { background: transparent; }
+}
+.seller-hub .hub-flash { animation: hub-row-flash var(--dur-slow) var(--ease-tide); }
+@media (prefers-reduced-motion: reduce) {
+  .seller-hub .hub-flash { animation: none; }
+}
+.seller-hub .hub-card-orders { min-height: 23rem; }
+.seller-hub .hub-card-products { min-height: 26rem; }
+.seller-hub .hub-card-notifications { min-height: 30rem; }
+.seller-hub .hub-card-sales { min-height: 24rem; }
+@media (max-width: 639px) {
+  .seller-hub .hub-card-sales { min-height: 48rem; }
+}
+.seller-hub .hub-input {
+  display: block;
+  max-width: 100%;
+  margin-top: var(--space-1);
+  border: 1px solid rgb(var(--hairline));
+  padding: 0.5rem 0.75rem;
+  background: rgb(var(--porcelain));
+  color: rgb(var(--foam));
+  font-variant-numeric: tabular-nums;
+}

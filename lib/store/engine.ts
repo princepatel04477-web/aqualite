@@ -21,6 +21,9 @@ import type { HeroSlideRow } from "@/lib/validation/hero";
 import { deleteStoreJson, readStoreJson, usesRemoteStore, writeStoreJson } from "@/lib/store/persist";
 import { lookupPincode } from "@/lib/store/pincode";
 import { quoteCart, COD_MAX_PAISE } from "@/lib/store/pricing";
+import { effectivePrice, type PricePatch, type PriceChange } from "@/lib/hub/pricing/effective";
+import { draftSchema, publishError, type ProductDraft } from "@/lib/hub/catalog/schema";
+import { SIZE_CHART } from "@/content/catalog";
 
 type Stock = { onHand: number; reserved: number };
 type Reservation = {
@@ -88,6 +91,8 @@ type Settings = {
   codMaxPaise: number;
   returnWindowDays: number;
   announcements: string[];
+  leadTimeDays?: number;
+  targetCoverDays?: number;
 };
 
 type State = {
@@ -114,6 +119,13 @@ type State = {
   heroSlides: HeroSlideRow[];
   settings: Settings;
   inactiveVariants: string[];
+  variantOverrides: Record<string, Partial<CatalogVariant>>;
+  extraVariants: Record<string, CatalogVariant[]>;
+  imageOverrides: Record<string, CatalogProduct["colorways"][number]["images"]>;
+  contentOverrides: Record<string, Partial<CatalogProduct>>;
+  priceChanges: PriceChange[];
+  productDrafts: Array<{ ownerId: string; draft: ProductDraft; updatedAt: string }>;
+  hubLayouts: Record<string, unknown>;
 };
 
 const defaultSettings = (): Settings => ({
@@ -122,6 +134,8 @@ const defaultSettings = (): Settings => ({
   codFeePaise: 4900,
   codMaxPaise: COD_MAX_PAISE,
   returnWindowDays: 7,
+  leadTimeDays: 10,
+  targetCoverDays: 30,
   announcements: [
     "Free shipping over ₹999",
     "COD available",
@@ -157,6 +171,13 @@ function emptyState(): State {
     heroSlides: [],
     settings: defaultSettings(),
     inactiveVariants: [],
+    variantOverrides: {},
+    extraVariants: {},
+    imageOverrides: {},
+    contentOverrides: {},
+    priceChanges: [],
+    productDrafts: [],
+    hubLayouts: {},
   };
 }
 
@@ -260,7 +281,15 @@ function nowIso(): string {
 }
 
 function allProducts(state: State): CatalogProduct[] {
-  return [...seedProducts, ...state.customProducts];
+  return [...seedProducts, ...state.customProducts].map((product) => ({
+    ...product,
+    ...state.contentOverrides?.[product.id],
+    colorways: product.colorways.map((colorway) => ({
+      ...colorway,
+      images: [...(state.imageOverrides?.[colorway.id] ?? colorway.images)].sort((a, b) => Number(b.role === "primary") - Number(a.role === "primary")),
+      variants: [...colorway.variants, ...(state.extraVariants?.[colorway.id] ?? [])].map((variant) => ({ ...variant, ...state.variantOverrides?.[variant.id] })),
+    })),
+  }));
 }
 
 export function catalogProducts(): Promise<CatalogProduct[]> {
@@ -273,8 +302,8 @@ function locate(state: State, variantId: string): Located | null {
   for (const product of allProducts(state)) {
     for (const colorway of product.colorways) {
       const variant = colorway.variants.find((item) => item.id === variantId);
-      const image = colorway.images[0];
-      if (variant && image) {
+      const image = colorway.images.find((row) => row.role === "primary");
+      if (variant && image?.src && colorway.images.every((row) => !!row.alt.trim()) && variant.pricePaise > 0) {
         return {
           product,
           colorwayId: colorway.id,
@@ -290,6 +319,7 @@ function locate(state: State, variantId: string): Located | null {
 }
 
 function available(state: State, variantId: string): number {
+  if (state.inactiveVariants.includes(variantId)) return 0;
   const stock = state.stock[variantId];
   if (!stock) return 0;
   return Math.max(0, stock.onHand - stock.reserved);
@@ -311,7 +341,7 @@ function summarize(state: State, cart: Cart, method?: PaymentMethod): CartSummar
       {
         variantId: item.variantId,
         qty: item.qty,
-        unitPricePaise: found.variant.pricePaise,
+        unitPricePaise: effectivePrice(found.variant),
         available: available(state, item.variantId),
         found,
       },
@@ -464,7 +494,9 @@ export function quoteFor(cartId: string, method: PaymentMethod): Promise<Result<
   return withStore((state) => {
     const cart = state.carts[cartId];
     if (!cart || cart.items.length === 0) return fail("EMPTY_CART");
-    return ok(summarize(state, cart, method));
+    const summary = summarize(state, cart, method);
+    if (summary.lines.length !== cart.items.length) return err("VALIDATION", "A listing in your bag is unavailable. Remove it and try again.");
+    return ok(summary);
   });
 }
 
@@ -512,7 +544,7 @@ export function placeOrder(input: PlaceInput): Promise<Result<Order>> {
     }
     const locked = [...cart.items].sort((a, b) => a.variantId.localeCompare(b.variantId));
     for (const item of locked) {
-      if (available(state, item.variantId) < item.qty) {
+      if (!locate(state, item.variantId)?.product.isActive || available(state, item.variantId) < item.qty) {
         const found = locate(state, item.variantId);
         return fail("OUT_OF_STOCK", { skus: [found?.variant.sku ?? item.variantId] });
       }
@@ -870,10 +902,12 @@ export function adjustStock(
   reason: string,
   note: string,
   actor: string,
+  expectedOnHand?: number,
 ): Promise<Result<{ onHand: number; reserved: number; available: number }>> {
   return withStore((state) => {
     const stock = state.stock[variantId];
     if (!stock) return fail("NOT_FOUND");
+    if (expectedOnHand !== undefined && stock.onHand !== expectedOnHand) return err("VALIDATION", "Stock has changed. Refresh and retry.");
     if (!Number.isInteger(delta)) return fail("VALIDATION");
     if (stock.onHand + delta < stock.reserved) return fail("VALIDATION", { reason: "below_reserved" });
     stock.onHand += delta;
@@ -1271,6 +1305,207 @@ export function createReturn(input: {
 
 export function listReturns(): Promise<ReturnReq[]> {
   return withStore((state) => state.returns);
+}
+
+// Read-only Seller Hub snapshot. Unlike dashboard(), this never rewrites the
+// entire D1 JSON document for a read, so parallel RSC boundaries can resolve
+// independently. The engine remains the live source of truth until cutover.
+export async function hubSnapshot(): Promise<{
+  orders: Order[];
+  reviews: StoredReview[];
+  returns: ReturnReq[];
+  stock: Record<string, Stock>;
+  payments: State["payments"];
+  inactiveVariants: string[];
+  ledger: Ledger[];
+  priceChanges: PriceChange[];
+  settings: Settings;
+  products: CatalogProduct[];
+  outbox: EmailOut[];
+}> {
+  const state = await load();
+  return {
+    orders: state.orders,
+    reviews: state.reviews,
+    returns: state.returns,
+    stock: state.stock,
+    payments: state.payments,
+    inactiveVariants: state.inactiveVariants ?? [],
+    ledger: state.ledger,
+    priceChanges: state.priceChanges ?? [],
+    settings: state.settings,
+    products: allProducts(state),
+    outbox: state.outbox,
+  };
+}
+
+export function readHubLayout(userId: string): Promise<unknown> {
+  return load().then((state) => state.hubLayouts?.[userId] ?? null);
+}
+
+export function writeHubLayout(userId: string, layout: unknown): Promise<void> {
+  return withStore((state) => {
+    state.hubLayouts ??= {};
+    state.hubLayouts[userId] = layout;
+  });
+}
+
+/** Pricing, stock and draft mutations share the same serialised write path as checkout. */
+export function addColorwayVariant(input: { colorwayId: string; sizeUk: number; sku: string; pricePaise: number; mrpPaise: number; stock: number }, actor: string): Promise<Result<{ id: string }>> {
+  return withStore((state) => {
+    const product = allProducts(state).find((row) => row.colorways.some((color) => color.id === input.colorwayId));
+    const color = product?.colorways.find((row) => row.id === input.colorwayId);
+    const size = product ? SIZE_CHART[product.gender].find((row) => row.uk === input.sizeUk) : null;
+    if (!color || !size || color.variants.some((row) => row.sizeUk === size.uk) ||
+      allProducts(state).some((row) => row.colorways.some((c) => c.variants.some((v) => v.sku === input.sku))) ||
+      input.pricePaise > input.mrpPaise || input.pricePaise <= 0 || !Number.isInteger(input.stock) || input.stock < 0) return fail("VALIDATION");
+    const variant: CatalogVariant = { id: crypto.randomUUID(), sku: input.sku, sizeUk: size.uk, sizeEu: size.eu, sizeUs: size.us, footLengthMm: size.mm, label: size.label, mrpPaise: input.mrpPaise, pricePaise: input.pricePaise, stock: input.stock };
+    state.extraVariants ??= {};
+    state.extraVariants[color.id] = [...(state.extraVariants[color.id] ?? []), variant];
+    state.stock[variant.id] = { onHand: variant.stock, reserved: 0 };
+    state.audit.push({ id: uid("aud"), actorId: actor, action: "add_variant", entity: "variant", entityId: variant.id, diff: { sku: variant.sku, sizeUk: variant.sizeUk }, at: nowIso() });
+    return ok({ id: variant.id });
+  });
+}
+
+export function updateProductImages(colorwayId: string, images: CatalogProduct["colorways"][number]["images"], actor: string): Promise<Result<{ saved: boolean }>> {
+  return withStore((state) => {
+    const product = allProducts(state).find((row) => row.colorways.some((color) => color.id === colorwayId));
+    const color = product?.colorways.find((row) => row.id === colorwayId);
+    if (!product || !color) return fail("NOT_FOUND");
+    if (images.length > 16 || images.some((row) => !row.alt.trim() || !/^\/catalog\/|^\/api\/media\/catalog-|^https:\/\//.test(row.src))) return fail("VALIDATION");
+    const oldUrls = new Set(color.images.map((row) => row.src));
+    if (images.some((row) => !oldUrls.has(row.src) && !row.src.startsWith("/api/media/catalog-") && !row.src.startsWith(`${process.env.SUPABASE_URL ?? ""}/storage/v1/object/public/catalog/`))) return fail("VALIDATION");
+    state.imageOverrides ??= {};
+    state.imageOverrides[colorwayId] = images;
+    state.audit.push({ id: uid("aud"), actorId: actor, action: "update_images", entity: "colorway", entityId: colorwayId, diff: { count: images.length }, at: nowIso() });
+    return ok({ saved: true });
+  });
+}
+
+export function updateProductContent(productId: string, patch: Pick<CatalogProduct, "description" | "care" | "features" | "keywords" | "seoTitle" | "seoDescription">, actor: string): Promise<Result<{ saved: boolean }>> {
+  return withStore((state) => {
+    if (!allProducts(state).some((row) => row.id === productId)) return fail("NOT_FOUND");
+    state.contentOverrides ??= {};
+    state.contentOverrides[productId] = { ...state.contentOverrides[productId], ...patch };
+    state.audit.push({ id: uid("aud"), actorId: actor, action: "update_listing_content", entity: "product", entityId: productId, diff: patch, at: nowIso() });
+    return ok({ saved: true });
+  });
+}
+
+export function updateOffers(patches: PricePatch[], actor: string): Promise<Result<{ updated: number }>> {
+  return withStore((state) => {
+    if (!patches.length || patches.length > 500 || new Set(patches.map((row) => row.variantId)).size !== patches.length) return fail("VALIDATION");
+    const products = allProducts(state);
+    const candidates = patches.map((patch) => {
+      const product = products.find((row) => row.colorways.some((color) => color.variants.some((variant) => variant.id === patch.variantId)));
+      const variant = product?.colorways.flatMap((row) => row.variants).find((row) => row.id === patch.variantId);
+      if (!variant) return null;
+      const next = { ...variant, ...patch };
+      return { patch, product, variant, next };
+    });
+    if (candidates.some((row) => !row || !Number.isInteger(row.next.pricePaise) || row.next.pricePaise <= 0 ||
+      !Number.isInteger(row.next.mrpPaise) || row.next.mrpPaise < row.next.pricePaise ||
+      (row.next.salePricePaise == null && (row.next.saleStartsAt != null || row.next.saleEndsAt != null)) ||
+      (row.next.salePricePaise != null && (!Number.isInteger(row.next.salePricePaise) || row.next.salePricePaise <= 0 || row.next.salePricePaise > row.next.pricePaise ||
+        !row.next.saleStartsAt || !row.next.saleEndsAt || !Number.isFinite(Date.parse(row.next.saleStartsAt)) || !Number.isFinite(Date.parse(row.next.saleEndsAt)) || Date.parse(row.next.saleStartsAt) >= Date.parse(row.next.saleEndsAt))) ||
+      (row.next.costPaise != null && (!Number.isInteger(row.next.costPaise) || row.next.costPaise < 0)) ||
+      (row.patch.expectedPricePaise !== undefined && row.patch.expectedPricePaise !== row.variant.pricePaise))) {
+      return fail("VALIDATION", { reason: "Invalid or outdated offer. Refresh and try again." });
+    }
+    for (const row of candidates) {
+      if (!row) continue;
+      const before = { pricePaise: row.variant.pricePaise, mrpPaise: row.variant.mrpPaise, salePricePaise: row.variant.salePricePaise ?? null, saleStartsAt: row.variant.saleStartsAt ?? null, saleEndsAt: row.variant.saleEndsAt ?? null, costPaise: row.variant.costPaise ?? null };
+      const after = { pricePaise: row.next.pricePaise, mrpPaise: row.next.mrpPaise, salePricePaise: row.next.salePricePaise ?? null, saleStartsAt: row.next.saleStartsAt ?? null, saleEndsAt: row.next.saleEndsAt ?? null, costPaise: row.next.costPaise ?? null };
+      if (JSON.stringify(before) === JSON.stringify(after)) continue;
+      state.variantOverrides ??= {};
+      state.variantOverrides[row.variant.id] = { ...state.variantOverrides[row.variant.id], ...after, updatedAt: nowIso() };
+      state.priceChanges ??= [];
+      state.priceChanges.unshift({ id: uid("prc"), variantId: row.variant.id, sku: row.variant.sku, actor, at: nowIso(), before, after });
+    }
+    return ok({ updated: candidates.length });
+  });
+}
+
+export function addStockBulk(rows: Array<{ variantId: string; delta: number }>, actor: string): Promise<Result<{ updated: number }>> {
+  return withStore((state) => {
+    if (!rows.length || rows.length > 500 || new Set(rows.map((row) => row.variantId)).size !== rows.length ||
+      rows.some((row) => !Number.isInteger(row.delta) || row.delta <= 0 || !state.stock[row.variantId])) return fail("VALIDATION");
+    for (const row of rows) {
+      const stock = state.stock[row.variantId];
+      if (!stock) continue;
+      stock.onHand += row.delta;
+      state.ledger.push({ id: uid("led"), variantId: row.variantId, delta: row.delta, reason: "restock", refOrderId: null, actor, note: "Bulk restock", at: nowIso() });
+      state.notifyQueue.push(row.variantId);
+    }
+    return ok({ updated: rows.length });
+  });
+}
+
+export function setListingStatus(ids: string[], active: boolean, actor: string): Promise<Result<{ updated: number }>> {
+  return withStore((state) => {
+    if (!ids.length || ids.length > 500 || new Set(ids).size !== ids.length) return fail("VALIDATION");
+    const valid = new Set(allProducts(state).flatMap((row) => row.colorways.flatMap((color) => color.variants.map((variant) => variant.id))));
+    if (ids.some((id) => !valid.has(id))) return fail("NOT_FOUND");
+    const inactive = new Set(state.inactiveVariants);
+    for (const id of ids) {
+      if (active) inactive.delete(id);
+      else inactive.add(id);
+    }
+    state.inactiveVariants = [...inactive];
+    state.audit.push({ id: uid("aud"), actorId: actor, action: active ? "activate_listings" : "deactivate_listings", entity: "variant", entityId: ids.join(","), diff: { ids }, at: nowIso() });
+    return ok({ updated: ids.length });
+  });
+}
+
+export async function readProductDrafts(ownerId: string): Promise<Array<{ draft: ProductDraft; updatedAt: string }>> {
+  const state = await load();
+  return (state.productDrafts ?? []).filter((row) => row.ownerId === ownerId).map(({ draft, updatedAt }) => ({ draft, updatedAt })).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+export function saveProductDraft(draft: ProductDraft, ownerId: string): Promise<Result<{ id: string }>> {
+  return withStore((state) => {
+    const parsed = draftSchema.safeParse(draft);
+    if (!parsed.success) return fail("VALIDATION");
+    state.productDrafts ??= [];
+    const existing = state.productDrafts.find((row) => row.draft.id === draft.id);
+    if (existing && existing.ownerId !== ownerId) return fail("UNAUTHORIZED");
+    if (existing) { existing.draft = draft; existing.updatedAt = nowIso(); }
+    else state.productDrafts.push({ ownerId, draft, updatedAt: nowIso() });
+    return ok({ id: draft.id });
+  });
+}
+
+export function publishProductDraft(id: string, ownerId: string): Promise<Result<{ slug: string }>> {
+  return withStore((state) => {
+    const entry = (state.productDrafts ?? []).find((row) => row.draft.id === id && row.ownerId === ownerId);
+    if (!entry) return fail("NOT_FOUND");
+    const draft = entry.draft;
+    const problem = publishError(draft);
+    if (problem) return err("VALIDATION", problem);
+    if (allProducts(state).some((row) => row.slug === draft.slug)) return err("ALREADY_EXISTS", "Product slug already exists.");
+    const existingSkus = new Set(allProducts(state).flatMap((row) => row.colorways.flatMap((color) => color.variants.map((variant) => variant.sku))));
+    if (draft.colorways.flatMap((color) => color.offers).some((offer) => existingSkus.has(offer.sku))) return err("ALREADY_EXISTS", "A SKU is already in use.");
+    const colorways: CatalogProduct["colorways"] = draft.colorways.map((row) => ({
+      id: row.id, name: row.name, slug: row.slug, swatch: row.swatch, family: row.family, images: row.images, spinFrames: 0,
+      variants: row.offers.map((offer) => {
+        const size = SIZE_CHART[draft.gender].find((entry) => entry.uk === offer.sizeUk);
+        return { id: crypto.randomUUID(), sku: offer.sku, sizeUk: offer.sizeUk, label: size?.label ?? String(offer.sizeUk), sizeEu: size?.eu ?? 0, sizeUs: size?.us ?? 0, footLengthMm: size?.mm ?? 0, mrpPaise: offer.mrpPaise, pricePaise: offer.pricePaise, stock: offer.stock };
+      }),
+    }));
+    const product: CatalogProduct = {
+      id: draft.id, slug: draft.slug, name: draft.name, subtitle: draft.subtitle, description: draft.description,
+      category: draft.category, gender: draft.gender, materialUpper: draft.materialUpper, materialSole: draft.materialSole,
+      features: draft.features, care: draft.care, isNew: true, isDemo: false, isActive: true, publishedAt: nowIso(),
+      colorways, hsn: draft.hsn, keywords: draft.keywords, seoTitle: draft.seoTitle, seoDescription: draft.seoDescription,
+      manufacturer: "Aqualite", countryOfOrigin: "India", netQuantity: "1 pair",
+    };
+    state.customProducts.push(product);
+    for (const variant of colorways.flatMap((row) => row.variants)) state.stock[variant.id] = { onHand: variant.stock, reserved: 0 };
+    state.productDrafts = state.productDrafts.filter((row) => row !== entry);
+    state.audit.push({ id: uid("aud"), actorId: ownerId, action: "publish_product", entity: "product", entityId: id, diff: { slug: draft.slug }, at: nowIso() });
+    return ok({ slug: draft.slug });
+  });
 }
 
 export function dashboard(): Promise<{
