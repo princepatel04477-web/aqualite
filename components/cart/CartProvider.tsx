@@ -3,7 +3,8 @@
 import { createContext, useContext, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
-import { addToCartAction, removeFromCartAction, updateQtyAction } from "@/lib/cart/actions";
+import { addToCartAction, applyCouponAction, removeFromCartAction, removeCouponAction, updateQtyAction } from "@/lib/cart/actions";
+import { promoCopy } from "@/content/errors";
 import type { CartSummary } from "@/lib/commerce/types";
 import { getBagTarget } from "@/lib/motion/bag-target";
 import { duration, ease } from "@/lib/motion/tokens";
@@ -17,6 +18,9 @@ type CartApi = {
   add: (variantId: string, qty?: number, fly?: { image: string; from: DOMRect }) => Promise<boolean>;
   update: (variantId: string, qty: number) => Promise<void>;
   remove: (variantId: string) => Promise<void>;
+  /** Server-quoted coupon apply. Returns the typed promo reason on rejection. */
+  applyCoupon: (code: string, email?: string) => Promise<{ ok: boolean; message: string }>;
+  removeCoupon: () => Promise<void>;
   toast: (message: string) => void;
   toasts: Toast[];
   dismiss: (id: string) => void;
@@ -68,6 +72,8 @@ export function CartProvider({ initial, children }: { initial: CartSummary; chil
           return false;
         }
         setSummary(result.data);
+        const line = result.data.lines.find((item) => item.variantId === variantId);
+        window.aqTrack?.("add_to_cart", line ? { productId: line.productId } : undefined);
         window.setTimeout(() => setOpen(true), 680);
         return true;
       },
@@ -90,6 +96,23 @@ export function CartProvider({ initial, children }: { initial: CartSummary; chil
           return;
         }
         setSummary(result.data);
+      },
+      applyCoupon: async (code, email) => {
+        const result = await applyCouponAction({ code, ...(email ? { email } : {}) });
+        if (!result.ok) {
+          const reason = result.error.details?.["promoReason"];
+          const message =
+            typeof reason === "string" && reason in promoCopy
+              ? promoCopy[reason as keyof typeof promoCopy]
+              : result.error.message;
+          return { ok: false, message };
+        }
+        setSummary(result.data);
+        return { ok: true, message: "Code applied." };
+      },
+      removeCoupon: async () => {
+        const result = await removeCouponAction();
+        if (result.ok) setSummary(result.data);
       },
     };
   }, [open, summary, toasts]);

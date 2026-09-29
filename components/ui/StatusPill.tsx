@@ -25,6 +25,10 @@ const statusTone: Record<string, Tone> = {
   Cancelled: "muted",
   Refunded: "muted",
   "Return requested": "warning",
+  /* promotions (S09) */
+  Scheduled: "info",
+  Paused: "warning",
+  Expired: "muted",
 };
 
 const toneStyles: Record<Tone, { box: string; Icon: typeof IconInfoCircle }> = {

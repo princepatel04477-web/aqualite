@@ -18,7 +18,7 @@ export default function TrackPage() {
         onSubmit={(event) => {
           event.preventDefault();
           const form = new FormData(event.currentTarget);
-          void fetch("/api/track", {
+          void fetch("/api/orders/track", {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ number: form.get("number"), email: form.get("email") }),

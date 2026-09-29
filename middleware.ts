@@ -27,12 +27,16 @@ export async function middleware(request: NextRequest) {
     url.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
-  if (request.nextUrl.pathname.startsWith("/admin") && role !== "admin") {
+  if (
+    (request.nextUrl.pathname.startsWith("/admin") ||
+      request.nextUrl.pathname.startsWith("/seller")) &&
+    role !== "admin"
+  ) {
     return NextResponse.rewrite(new URL("/denied", request.url));
   }
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/account/:path*", "/admin/:path*"],
+  matcher: ["/account/:path*", "/admin/:path*", "/seller/:path*", "/seller"],
 };

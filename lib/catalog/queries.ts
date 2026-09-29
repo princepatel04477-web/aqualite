@@ -3,9 +3,14 @@ import "server-only";
 import { CATEGORIES, collections, products as seedProducts, SIZE_CHART, type CatalogProduct } from "@/content/catalog";
 import { applyListing, type ListingParams } from "@/lib/catalog/filters";
 import type { ProductCardModel } from "@/lib/commerce/types";
-import { availabilityMap, catalogProducts, reviewsFor, stockOf } from "@/lib/store/engine";
+import { availabilityMap, catalogProducts, productPromoLabels, reviewsFor, stockOf } from "@/lib/store/engine";
 
-function cardFrom(product: CatalogProduct, colorwaySlug: string, stock: Record<string, number>): ProductCardModel | null {
+function cardFrom(
+  product: CatalogProduct,
+  colorwaySlug: string,
+  stock: Record<string, number>,
+  promoLabel?: string | null,
+): ProductCardModel | null {
   const colorway = product.colorways.find((item) => item.slug === colorwaySlug) ?? product.colorways[0];
   if (!colorway) return null;
   const category = CATEGORIES.find((item) => item.slug === product.category);
@@ -55,6 +60,7 @@ function cardFrom(product: CatalogProduct, colorwaySlug: string, stock: Record<s
     colorways,
     features: product.features,
     isNew: product.isNew,
+    promoLabel: promoLabel ?? null,
   };
 }
 
@@ -66,9 +72,10 @@ async function stockFor(list: CatalogProduct[]): Promise<Record<string, number>>
 export async function allCards(): Promise<ProductCardModel[]> {
   const list = await catalogProducts();
   const stock = await stockFor(list);
+  const promoLabels = await productPromoLabels();
   return list.flatMap((product) =>
     product.colorways.flatMap((colorway) => {
-      const card = cardFrom(product, colorway.slug, stock);
+      const card = cardFrom(product, colorway.slug, stock, promoLabels[product.id]);
       return card ? [card] : [];
     }),
   );
@@ -108,6 +115,7 @@ export async function getProduct(slug: string) {
     .filter((card) => card.productId !== product.id && (card.categorySlug === product.category || card.gender === product.gender))
     .slice(0, 8);
   const reviews = await reviewsFor(product.id);
+  const promoLabels = await productPromoLabels();
   const avg = reviews.length ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : 0;
   const fit = {
     runs_small: reviews.filter((review) => review.fit === "runs_small").length,
@@ -122,9 +130,10 @@ export async function getProduct(slug: string) {
     reviewSummary: { avg, count: reviews.length, fit },
     related,
     cards: product.colorways.flatMap((colorway) => {
-      const card = cardFrom(product, colorway.slug, stock);
+      const card = cardFrom(product, colorway.slug, stock, promoLabels[product.id]);
       return card ? [card] : [];
     }),
+    promoLabel: promoLabels[product.id] ?? null,
   };
 }
 

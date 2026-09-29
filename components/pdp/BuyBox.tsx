@@ -15,11 +15,13 @@ export function BuyBox({
   color,
   size,
   stock,
+  promoLabel,
 }: {
   product: CatalogProduct;
   color: string;
   size?: string;
   stock: Record<string, number>;
+  promoLabel?: string | null;
 }) {
   const router = useRouter();
   const { add } = useCart();
@@ -49,6 +51,11 @@ export function BuyBox({
         ))}
       </div>
       {price ? <Price className="mt-6" paise={price.pricePaise} mrpPaise={price.mrpPaise} tax size="lg" /> : null}
+      {promoLabel ? (
+        <p className="mt-3 inline-flex rounded-pill bg-red px-2.5 py-1 font-mono text-eyebrow uppercase text-on-red">
+          {promoLabel}
+        </p>
+      ) : null}
       <p className="mt-8 font-mono text-eyebrow uppercase text-mist">UK size</p>
       <div className={`mt-3 grid grid-cols-4 gap-2 ${shake ? "animate-shake" : ""}`}>
         {colorway.variants.map((variant) => {

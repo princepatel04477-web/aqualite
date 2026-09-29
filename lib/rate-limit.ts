@@ -22,8 +22,13 @@ export async function clientIp(): Promise<string> {
   return forwarded || requestHeaders.get("x-real-ip") || "local";
 }
 
-export async function limitIp(route: string, limit: number, windowSeconds: number): Promise<boolean> {
-  const key = `ip:${route}:${await hashIp(await clientIp())}`;
+export async function limitIp(
+  route: string,
+  limit: number,
+  windowSeconds: number,
+  ip?: string,
+): Promise<boolean> {
+  const key = `ip:${route}:${await hashIp(ip ?? (await clientIp()))}`;
   return rateLimited(key, limit, windowSeconds);
 }
 

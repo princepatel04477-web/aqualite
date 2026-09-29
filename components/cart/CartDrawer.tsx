@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { useCart } from "@/components/cart/CartProvider";
+import { CouponField } from "@/components/cart/CouponField";
 import { useLenis } from "@/components/motion/SmoothScroll";
 import { Button } from "@/components/ui/Button";
 import { IconClose, IconMinus, IconPlus } from "@/components/ui/Icons";
@@ -122,8 +123,21 @@ export function CartDrawer() {
                 <span>Subtotal</span>
                 <span className="tabular">{formatINR(summary.subtotalPaise)}</span>
               </div>
-              <p className="mb-4 font-body text-small text-mist">Taxes included. Shipping calculated at checkout.</p>
-              <Button href="/checkout" className="w-full" variant="primary" onClick={() => setOpen(false)}>
+              {summary.autoPromo ? (
+                <div className="mb-1 flex justify-between font-body text-red-ink">
+                  <span className="truncate pr-2">{summary.autoPromo.name}</span>
+                  <span className="tabular">−{formatINR(summary.autoPromo.discountPaise)}</span>
+                </div>
+              ) : null}
+              {summary.promo ? (
+                <div className="mb-1 flex justify-between font-body text-red-ink">
+                  <span className="truncate pr-2">{summary.promo.code ?? summary.promo.name}</span>
+                  <span className="tabular">−{formatINR(summary.promo.discountPaise)}</span>
+                </div>
+              ) : null}
+              <p className="mb-2 font-body text-small text-mist">Taxes included. Shipping calculated at checkout.</p>
+              <CouponField compact />
+              <Button href="/checkout" className="mt-4 w-full" variant="primary" onClick={() => setOpen(false)}>
                 Checkout
               </Button>
               <Link href="/bag" onClick={() => setOpen(false)} className="mt-3 block text-center font-mono text-eyebrow uppercase text-mist">

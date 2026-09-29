@@ -3,10 +3,11 @@ import "server-only";
 import {
   products as seedProducts,
   reviews as seedReviews,
+  collections as seedCollections,
   type CatalogProduct,
   type CatalogVariant,
 } from "@/content/catalog";
-import { errorCopy } from "@/content/errors";
+import { errorCopy, promoCopy } from "@/content/errors";
 import { heroSeed } from "@/content/hero";
 import type {
   Address,
@@ -16,11 +17,22 @@ import type {
   PaymentMethod,
   SessionUser,
 } from "@/lib/commerce/types";
+import {
+  customerKeyOf,
+  evaluatePromotion,
+  productPromoLabel,
+  quoteCartWithPromotions,
+  type AppliedPromo,
+  type PromoItem,
+  type Promotion,
+  type PromoUsage,
+  type PromoQuote,
+} from "@/lib/pricing/promotions";
 import { err, ok, type Result } from "@/lib/result";
 import type { HeroSlideRow } from "@/lib/validation/hero";
 import { deleteStoreJson, readStoreJson, usesRemoteStore, writeStoreJson } from "@/lib/store/persist";
 import { lookupPincode } from "@/lib/store/pincode";
-import { quoteCart, COD_MAX_PAISE } from "@/lib/store/pricing";
+import { COD_MAX_PAISE } from "@/lib/store/pricing";
 
 type Stock = { onHand: number; reserved: number };
 type Reservation = {
@@ -46,7 +58,7 @@ type Otp = { email: string; code: string; expires: number; sentAt: number[] };
 type Rate = { key: string; windowStart: number; count: number };
 type WishlistItem = { userId: string; productId: string; colorwayId: string };
 type Notify = { variantId: string; email: string; userId: string | null; notifiedAt: string | null };
-type ReturnReq = {
+export type ReturnReq = {
   id: string;
   orderId: string;
   orderItemId: string;
@@ -65,7 +77,7 @@ type Audit = {
   diff: Record<string, unknown>;
   at: string;
 };
-type StoredReview = {
+export type StoredReview = {
   id: string;
   productId: string;
   userId: string | null;
@@ -78,8 +90,132 @@ type StoredReview = {
   verified: boolean;
   createdAt: string;
 };
-type EmailOut = { id: string; to: string; subject: string; text: string; at: string };
-type Cart = { id: string; userId: string | null; items: { variantId: string; qty: number }[]; updatedAt: string };
+export type EmailOut = { id: string; to: string; subject: string; text: string; at: string };
+type Cart = { id: string; userId: string | null; items: { variantId: string; qty: number }[]; promoCode: string | null; updatedAt: string };
+
+export type PromotionRedemption = {
+  id: string;
+  promotionId: string;
+  orderId: string;
+  customerKey: string;
+  discountPaise: number;
+  /** Set when a cancellation or refund frees the usage slot again. */
+  releasedAt: string | null;
+  createdAt: string;
+};
+
+export type AnalyticsEventType = "page_view" | "add_to_cart" | "begin_checkout" | "purchase";
+
+export type AnalyticsEvent = {
+  id: string;
+  type: AnalyticsEventType;
+  at: string;
+  sessionId: string;
+  path: string;
+  productId: string | null;
+  referrerHost: string | null;
+  device: "mobile" | "tablet" | "desktop";
+  /** HMAC of IP with a daily-rotating salt — dedupe/rate only, never the IP. */
+  ipHash: string;
+  orderId: string | null;
+  valuePaise: number;
+  month: string;
+};
+
+export type DailyProductStat = {
+  day: string;
+  productId: string;
+  pageViews: number;
+  pdpSessions: number;
+  addToCarts: number;
+  beginCheckouts: number;
+  purchases: number;
+  units: number;
+  salesPaise: number;
+};
+
+export type StoredSettlement = {
+  id: string;
+  utr: string;
+  settledOn: string;
+  grossPaise: number;
+  feePaise: number;
+  gstOnFeePaise: number;
+  netPaise: number;
+  status: string;
+  createdAt: string;
+};
+
+export type StoredSettlementItem = {
+  id: string;
+  settlementId: string;
+  paymentId: string;
+  orderId: string | null;
+  amountPaise: number;
+  feePaise: number;
+  gstOnFeePaise: number;
+  netPaise: number;
+};
+
+export type CodCollection = {
+  id: string;
+  periodStart: string;
+  periodEnd: string;
+  amountPaise: number;
+  status: "to_collect" | "collected";
+  courierNote: string;
+  collectedAt: string | null;
+};
+
+export type HubNotification = {
+  id: string;
+  kind: "settlement_mismatch" | "low_rating" | "sla";
+  title: string;
+  body: string;
+  link: string;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type MessageThread = {
+  id: string;
+  orderId: string | null;
+  customerEmail: string;
+  subject: string;
+  status: "open" | "waiting" | "closed";
+  lastMessageAt: string;
+  createdAt: string;
+};
+
+export type MessageRecord = {
+  id: string;
+  threadId: string;
+  direction: "in" | "out";
+  body: string;
+  attachments: { name: string; url: string }[];
+  sentVia: "form" | "resend" | "webhook";
+  sentAt: string;
+};
+
+export type SavedReply = {
+  id: string;
+  title: string;
+  body: string;
+  updatedAt: string;
+};
+
+export type HealthSnapshot = {
+  id: string;
+  computedAt: string;
+  metrics: Record<string, number>;
+};
+
+export type ReviewReply = {
+  id: string;
+  reviewId: string;
+  body: string;
+  at: string;
+};
 
 type Settings = {
   shippingThresholdPaise: number;
@@ -87,6 +223,8 @@ type Settings = {
   codFeePaise: number;
   codMaxPaise: number;
   returnWindowDays: number;
+  /** Days after which an unshipped order counts against late shipment rate. */
+  shipByDays: number;
   announcements: string[];
 };
 
@@ -114,6 +252,20 @@ type State = {
   heroSlides: HeroSlideRow[];
   settings: Settings;
   inactiveVariants: string[];
+  promotions: Promotion[];
+  redemptions: PromotionRedemption[];
+  events: AnalyticsEvent[];
+  eventIds: string[];
+  dailyProductStats: DailyProductStat[];
+  settlements: StoredSettlement[];
+  settlementItems: StoredSettlementItem[];
+  codCollections: CodCollection[];
+  notifications: HubNotification[];
+  messageThreads: MessageThread[];
+  messages: MessageRecord[];
+  savedReplies: SavedReply[];
+  healthSnapshots: HealthSnapshot[];
+  reviewReplies: ReviewReply[];
 };
 
 const defaultSettings = (): Settings => ({
@@ -122,6 +274,7 @@ const defaultSettings = (): Settings => ({
   codFeePaise: 4900,
   codMaxPaise: COD_MAX_PAISE,
   returnWindowDays: 7,
+  shipByDays: 2,
   announcements: [
     "Free shipping over ₹999",
     "COD available",
@@ -157,6 +310,20 @@ function emptyState(): State {
     heroSlides: [],
     settings: defaultSettings(),
     inactiveVariants: [],
+    promotions: [],
+    redemptions: [],
+    events: [],
+    eventIds: [],
+    dailyProductStats: [],
+    settlements: [],
+    settlementItems: [],
+    codCollections: [],
+    notifications: [],
+    messageThreads: [],
+    messages: [],
+    savedReplies: [],
+    healthSnapshots: [],
+    reviewReplies: [],
   };
 }
 
@@ -297,13 +464,56 @@ function available(state: State, variantId: string): number {
 
 function rules(state: State) {
   return {
-    threshold: state.settings.shippingThresholdPaise,
-    fee: state.settings.shippingFeePaise,
-    codFee: state.settings.codFeePaise,
+    thresholdPaise: state.settings.shippingThresholdPaise,
+    feePaise: state.settings.shippingFeePaise,
+    codFeePaise: state.settings.codFeePaise,
   };
 }
 
-function summarize(state: State, cart: Cart, method?: PaymentMethod): CartSummary {
+function collectionSlugsOf(productSlug: string): string[] {
+  return seedCollections
+    .filter((collection) => collection.productSlugs.includes(productSlug))
+    .map((collection) => collection.slug);
+}
+
+function usageCounts(state: State, customerKey: string): PromoUsage[] {
+  return state.promotions.map((promotion) => {
+    const rows = state.redemptions.filter(
+      (row) => row.promotionId === promotion.id && row.releasedAt === null,
+    );
+    return {
+      promotionId: promotion.id,
+      total: rows.length,
+      forCustomer: rows.filter((row) => row.customerKey === customerKey).length,
+    };
+  });
+}
+
+function hasPriorOrders(state: State, userId: string | null, email: string | null): boolean {
+  return state.orders.some((order) => {
+    if (["cancelled", "payment_failed"].includes(order.status)) return false;
+    return customerKeyOf(order.userId, order.email) === customerKeyOf(userId, email);
+  });
+}
+
+function toCartPromo(applied: AppliedPromo | null): CartSummary["promo"] {
+  if (!applied) return null;
+  return {
+    promotionId: applied.promotionId,
+    kind: applied.kind,
+    code: applied.code,
+    name: applied.name,
+    discountPaise: applied.discountPaise,
+    freeShipping: applied.freeShipping,
+  };
+}
+
+function summarize(
+  state: State,
+  cart: Cart,
+  method?: PaymentMethod,
+  customer?: { userId: string | null; email: string | null },
+): CartSummary {
   const inputs = cart.items.flatMap((item) => {
     const found = locate(state, item.variantId);
     if (!found) return [];
@@ -317,23 +527,38 @@ function summarize(state: State, cart: Cart, method?: PaymentMethod): CartSummar
       },
     ];
   });
-  const quote = quoteCart(
-    inputs.map((item) => ({
-      variantId: item.variantId,
-      qty: item.qty,
-      unitPricePaise: item.unitPricePaise,
-      available: item.available,
-    })),
-    { method, rules: rules(state) },
-  );
+  const promoItems: PromoItem[] = inputs.map((item) => ({
+    lineId: item.variantId,
+    productId: item.found.product.id,
+    category: item.found.product.category,
+    collectionSlugs: collectionSlugsOf(item.found.product.slug),
+    qty: item.qty,
+    unitPricePaise: item.unitPricePaise,
+    available: item.available,
+  }));
+  const userId = customer?.userId ?? cart.userId ?? null;
+  const email = customer?.email ?? null;
+  const customerKey = customerKeyOf(userId, email);
+  const promoCode = cart.promoCode ?? null;
+  const quote: PromoQuote = quoteCartWithPromotions({
+    items: promoItems,
+    code: promoCode,
+    email,
+    userId,
+    method,
+    shipping: rules(state),
+    promotions: state.promotions,
+    usage: usageCounts(state, customerKey),
+    hasPriorOrders: hasPriorOrders(state, userId, email),
+  });
   return {
     cartId: cart.id,
     lines: quote.lines.flatMap((line) => {
-      const source = inputs.find((item) => item.variantId === line.variantId);
+      const source = inputs.find((item) => item.variantId === line.lineId);
       if (!source) return [];
       return [
         {
-          variantId: line.variantId,
+          variantId: line.lineId,
           productId: source.found.product.id,
           productSlug: source.found.product.slug,
           productName: source.found.product.name,
@@ -346,6 +571,9 @@ function summarize(state: State, cart: Cart, method?: PaymentMethod): CartSummar
           unitPricePaise: line.unitPricePaise,
           mrpPaise: source.found.variant.mrpPaise,
           lineTotalPaise: line.lineTotalPaise,
+          discountPaise: line.discountPaise,
+          taxRateBps: line.taxRateBps,
+          taxPaise: line.taxPaise,
           available: line.available,
           isShort: line.isShort,
         },
@@ -358,6 +586,10 @@ function summarize(state: State, cart: Cart, method?: PaymentMethod): CartSummar
     totalPaise: quote.totalPaise,
     freeShippingRemainingPaise: quote.freeShippingRemainingPaise,
     count: quote.lines.reduce((sum, line) => sum + line.qty, 0),
+    discountPaise: quote.discountTotalPaise,
+    promo: toCartPromo(quote.promo),
+    autoPromo: toCartPromo(quote.autoPromo),
+    rejection: quote.rejection ? { code: quote.rejection.code } : null,
   };
 }
 
@@ -372,6 +604,10 @@ export function emptySummary(): CartSummary {
     totalPaise: 0,
     freeShippingRemainingPaise: 99900,
     count: 0,
+    discountPaise: 0,
+    promo: null,
+    autoPromo: null,
+    rejection: null,
   };
 }
 
@@ -395,10 +631,15 @@ export function rateLimited(key: string, limit: number, windowSeconds: number): 
   });
 }
 
+/** Coupon brute-force guard: 10 attempts per 10 minutes per cart. */
+export function couponAttemptLimited(cartId: string): Promise<boolean> {
+  return rateLimited(`coupon:${cartId}`, 10, 600);
+}
+
 export function createCart(userId: string | null = null): Promise<string> {
   return withStore((state) => {
     const id = crypto.randomUUID();
-    state.carts[id] = { id, userId, items: [], updatedAt: nowIso() };
+    state.carts[id] = { id, userId, items: [], promoCode: null, updatedAt: nowIso() };
     return id;
   });
 }
@@ -500,7 +741,19 @@ export function placeOrder(input: PlaceInput): Promise<Result<Order>> {
     if (!cart || cart.items.length === 0) return fail("EMPTY_CART");
     const pin = lookupPincode(input.address.pincode);
     if (!pin?.serviceable) return fail("NOT_SERVICEABLE");
-    const summary = summarize(state, cart, input.method);
+    // The whole withStore block is one serialized transaction (the store chain
+    // plays the row-lock role of FOR UPDATE): promotion re-validation, usage
+    // limit enforcement and the redemption write cannot interleave.
+    const summary = summarize(state, cart, input.method, {
+      userId: input.userId,
+      email: input.email,
+    });
+    if (cart.promoCode && summary.rejection) {
+      return err("PROMO_REJECTED", promoCopy[summary.rejection.code], {
+        promoReason: summary.rejection.code,
+        code: cart.promoCode,
+      });
+    }
     if (summary.lines.some((line) => line.isShort)) {
       return fail("OUT_OF_STOCK", {
         skus: summary.lines.filter((line) => line.isShort).map((line) => line.variantId),
@@ -521,17 +774,10 @@ export function placeOrder(input: PlaceInput): Promise<Result<Order>> {
     const createdAt = nowIso();
     const items = summary.lines.map((line) => {
       const found = locate(state, line.variantId);
-      const tax = quoteCart([
-        {
-          variantId: line.variantId,
-          qty: line.qty,
-          unitPricePaise: line.unitPricePaise,
-          available: line.available,
-        },
-      ]).lines[0];
       return {
         id: uid("oi"),
         variantId: line.variantId,
+        productId: line.productId,
         productName: line.productName,
         colorwayName: line.colorwayName,
         productSlug: line.productSlug,
@@ -540,12 +786,14 @@ export function placeOrder(input: PlaceInput): Promise<Result<Order>> {
         image: line.image,
         unitPricePaise: line.unitPricePaise,
         qty: line.qty,
-        taxRateBps: tax?.taxRateBps ?? 500,
-        taxPaise: tax?.taxPaise ?? 0,
+        taxRateBps: line.taxRateBps,
+        taxPaise: line.taxPaise,
         lineTotalPaise: line.lineTotalPaise,
+        discountPaise: line.discountPaise,
       };
     });
     const status: OrderStatus = input.method === "cod" ? "cod_confirmed" : "pending_payment";
+    const primaryPromo = summary.promo ?? summary.autoPromo;
     const order: Order = {
       id: orderId,
       number: orderNumber(state),
@@ -561,6 +809,11 @@ export function placeOrder(input: PlaceInput): Promise<Result<Order>> {
       codFeePaise: summary.codFeePaise,
       taxPaise: summary.taxPaise,
       totalPaise: summary.totalPaise,
+      discountPaise: summary.discountPaise,
+      promotionId: primaryPromo?.promotionId ?? null,
+      promotionCode: primaryPromo?.code ?? null,
+      promotionName: primaryPromo?.name ?? null,
+      promotionKind: primaryPromo?.kind ?? null,
       idempotencyKey: input.idempotencyKey,
       accessToken: crypto.randomUUID(),
       razorpayOrderId: null,
@@ -614,6 +867,24 @@ export function placeOrder(input: PlaceInput): Promise<Result<Order>> {
         });
       }
     }
+    // Redemption write — UNIQUE(promotion_id, order_id) semantics.
+    const customerKey = customerKeyOf(input.userId, input.email);
+    for (const applied of [summary.promo, summary.autoPromo]) {
+      if (!applied) continue;
+      const duplicate = state.redemptions.some(
+        (row) => row.promotionId === applied.promotionId && row.orderId === orderId,
+      );
+      if (duplicate) continue;
+      state.redemptions.push({
+        id: uid("rdm"),
+        promotionId: applied.promotionId,
+        orderId,
+        customerKey,
+        discountPaise: applied.discountPaise,
+        releasedAt: null,
+        createdAt,
+      });
+    }
     if (input.method === "cod") cart.items = [];
     state.orders.push(order);
     return ok(order);
@@ -643,6 +914,15 @@ function releaseOrderReservations(state: State, order: Order, reason: string): v
       note: reason,
       at: nowIso(),
     });
+  }
+}
+
+/** Cancellation, refund or payment failure frees promotion usage slots. */
+function releaseRedemptionsFor(state: State, orderId: string): void {
+  for (const row of state.redemptions) {
+    if (row.orderId === orderId && row.releasedAt === null) {
+      row.releasedAt = nowIso();
+    }
   }
 }
 
@@ -756,6 +1036,7 @@ export function failPayment(orderId: string, reason: string): Promise<Result<Ord
       return ok(order);
     }
     releaseOrderReservations(state, order, reason);
+    releaseRedemptionsFor(state, orderId);
     pushEvent(order, "payment_failed", "system", reason);
     return ok(order);
   });
@@ -768,6 +1049,7 @@ function releaseExpiredIn(state: State): number {
     if (order.status !== "pending_payment" || !order.reservationExpiresAt) continue;
     if (new Date(order.reservationExpiresAt).getTime() > now) continue;
     releaseOrderReservations(state, order, "payment window expired");
+    releaseRedemptionsFor(state, order.id);
     pushEvent(order, "cancelled", "system", "payment window expired");
     count += 1;
   }
@@ -840,6 +1122,9 @@ export function transitionOrder(
     }
     if (to === "cancelled" && order.status === "pending_payment") {
       releaseOrderReservations(state, order, note);
+    }
+    if (to === "cancelled" || to === "refunded") {
+      releaseRedemptionsFor(state, orderId);
     }
     if (to === "shipped") {
       if (!tracking?.carrier || !tracking.number) return fail("VALIDATION");
@@ -923,6 +1208,10 @@ export function recordOutbox(to: string, subject: string, text: string): Promise
     state.outbox.unshift({ id: uid("mail"), to, subject, text, at: nowIso() });
     state.outbox = state.outbox.slice(0, 100);
   });
+}
+
+export function listOutbox(): Promise<EmailOut[]> {
+  return withStore((state) => [...state.outbox]);
 }
 
 export function getSettings(): Promise<Settings> {
@@ -1121,7 +1410,7 @@ export function mergeCart(guestCartId: string, userId: string): Promise<string> 
     let userCart = Object.values(state.carts).find((cart) => cart.userId === userId && cart.id !== guestCartId);
     if (!userCart) {
       const id = crypto.randomUUID();
-      userCart = { id, userId, items: [], updatedAt: nowIso() };
+      userCart = { id, userId, items: [], promoCode: null, updatedAt: nowIso() };
       state.carts[id] = userCart;
     }
     if (guest) {
@@ -1132,6 +1421,7 @@ export function mergeCart(guestCartId: string, userId: string): Promise<string> 
         else userCart.items.push({ variantId: item.variantId, qty });
       }
       guest.items = [];
+      if (!userCart.promoCode && guest.promoCode) userCart.promoCode = guest.promoCode;
     }
     userCart.userId = userId;
     return userCart.id;
@@ -1157,7 +1447,28 @@ export function addContact(input: {
   message: string;
 }): Promise<void> {
   return withStore((state) => {
-    state.contacts.unshift({ id: uid("msg"), ...input, at: nowIso() });
+    const at = nowIso();
+    state.contacts.unshift({ id: uid("ctc"), ...input, at });
+    // Contact-form messages land in the buyer-message inbox as threads.
+    const thread: MessageThread = {
+      id: uid("thr"),
+      orderId: null,
+      customerEmail: input.email.toLowerCase(),
+      subject: input.topic.slice(0, 120),
+      status: "open",
+      lastMessageAt: at,
+      createdAt: at,
+    };
+    state.messageThreads.push(thread);
+    state.messages.push({
+      id: uid("msg"),
+      threadId: thread.id,
+      direction: "in",
+      body: `${input.message}\n\n— ${input.name}${input.phone ? ` · ${input.phone}` : ""}`,
+      attachments: [],
+      sentVia: "form",
+      sentAt: at,
+    });
   });
 }
 
@@ -1269,6 +1580,19 @@ export function createReturn(input: {
   });
 }
 
+/** Flatteners for report/health maths (all rows, typed). */
+export function listReviewsForReport(): Promise<StoredReview[]> {
+  return withStore((state) => state.reviews);
+}
+
+export function listMessagesForReport(): Promise<MessageRecord[]> {
+  return withStore((state) => state.messages);
+}
+
+export function listReturnsForReport(): Promise<ReturnReq[]> {
+  return listReturns();
+}
+
 export function listReturns(): Promise<ReturnReq[]> {
   return withStore((state) => state.returns);
 }
@@ -1343,4 +1667,623 @@ export function rememberPaymentEvent(eventId: string): Promise<boolean> {
 export async function resetDemo(): Promise<void> {
   memory = null;
   await deleteStoreJson();
+}
+
+/* ------------------------------------------------------------------ Promotions (S09) */
+
+export type PromotionDraft = Omit<Promotion, "id" | "createdAt" | "updatedAt">;
+
+export function listPromotions(): Promise<Promotion[]> {
+  return withStore((state) => [...state.promotions].sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+}
+
+export function getPromotion(id: string): Promise<Promotion | null> {
+  return withStore((state) => state.promotions.find((item) => item.id === id) ?? null);
+}
+
+export function listRedemptions(): Promise<PromotionRedemption[]> {
+  return withStore((state) => [...state.redemptions]);
+}
+
+function normalizePromotion(draft: PromotionDraft): PromotionDraft {
+  return {
+    ...draft,
+    code: draft.code ? draft.code.trim().toUpperCase() : null,
+    targetIds: draft.targetIds.map((id) => id.trim()).filter(Boolean),
+  };
+}
+
+export function createPromotion(draft: PromotionDraft, actor: string): Promise<Result<Promotion>> {
+  return withStore((state) => {
+    const input = normalizePromotion(draft);
+    if (input.code && state.promotions.some((item) => item.code === input.code)) {
+      return fail("ALREADY_EXISTS", { reason: "code" });
+    }
+    const now = nowIso();
+    const promotion: Promotion = { ...input, id: uid("promo"), createdAt: now, updatedAt: now };
+    state.promotions.push(promotion);
+    state.audit.push({
+      id: uid("aud"),
+      actorId: actor,
+      action: "create_promotion",
+      entity: "promotion",
+      entityId: promotion.id,
+      diff: { name: promotion.name, code: promotion.code ?? "" },
+      at: now,
+    });
+    return ok(promotion);
+  });
+}
+
+export function updatePromotion(id: string, draft: PromotionDraft, actor: string): Promise<Result<Promotion>> {
+  return withStore((state) => {
+    const promotion = state.promotions.find((item) => item.id === id);
+    if (!promotion) return fail("NOT_FOUND");
+    const input = normalizePromotion(draft);
+    if (input.code && state.promotions.some((item) => item.code === input.code && item.id !== id)) {
+      return fail("ALREADY_EXISTS", { reason: "code" });
+    }
+    Object.assign(promotion, input, { updatedAt: nowIso() });
+    state.audit.push({
+      id: uid("aud"),
+      actorId: actor,
+      action: "update_promotion",
+      entity: "promotion",
+      entityId: id,
+      diff: { name: promotion.name },
+      at: nowIso(),
+    });
+    return ok(promotion);
+  });
+}
+
+export function setPromotionPaused(id: string, paused: boolean, actor: string): Promise<Result<Promotion>> {
+  return withStore((state) => {
+    const promotion = state.promotions.find((item) => item.id === id);
+    if (!promotion) return fail("NOT_FOUND");
+    promotion.isActive = !paused;
+    promotion.updatedAt = nowIso();
+    state.audit.push({
+      id: uid("aud"),
+      actorId: actor,
+      action: paused ? "pause_promotion" : "resume_promotion",
+      entity: "promotion",
+      entityId: id,
+      diff: {},
+      at: nowIso(),
+    });
+    return ok(promotion);
+  });
+}
+
+export function endPromotionNow(id: string, actor: string): Promise<Result<Promotion>> {
+  return withStore((state) => {
+    const promotion = state.promotions.find((item) => item.id === id);
+    if (!promotion) return fail("NOT_FOUND");
+    const now = nowIso();
+    promotion.endsAt = now;
+    promotion.updatedAt = now;
+    state.audit.push({
+      id: uid("aud"),
+      actorId: actor,
+      action: "end_promotion",
+      entity: "promotion",
+      entityId: id,
+      diff: { endsAt: now },
+      at: now,
+    });
+    return ok(promotion);
+  });
+}
+
+export function duplicatePromotion(id: string, actor: string): Promise<Result<Promotion>> {
+  return withStore((state) => {
+    const source = state.promotions.find((item) => item.id === id);
+    if (!source) return fail("NOT_FOUND");
+    const now = nowIso();
+    let code = source.code;
+    if (code) {
+      const root = code.slice(0, 20);
+      let suffix = "2";
+      while (state.promotions.some((item) => item.code === `${root}${suffix}`)) {
+        suffix = String(Number(suffix) + 1);
+      }
+      code = `${root}${suffix}`;
+    }
+    const copy: Promotion = {
+      ...source,
+      id: uid("promo"),
+      code,
+      name: `${source.name} (copy)`.slice(0, 80),
+      isActive: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    state.promotions.push(copy);
+    state.audit.push({
+      id: uid("aud"),
+      actorId: actor,
+      action: "duplicate_promotion",
+      entity: "promotion",
+      entityId: copy.id,
+      diff: { source: id },
+      at: now,
+    });
+    return ok(copy);
+  });
+}
+
+export function applyCouponToCart(
+  cartId: string,
+  code: string,
+  customer?: { userId: string | null; email: string | null },
+): Promise<Result<CartSummary>> {
+  return withStore((state) => {
+    const cart = state.carts[cartId];
+    if (!cart) return fail("EMPTY_CART");
+    const normalized = code.trim().toUpperCase();
+    if (!normalized || normalized.length > 24) return fail("VALIDATION");
+    cart.promoCode = normalized;
+    const summary = summarize(state, cart, undefined, customer);
+    if (summary.rejection) {
+      const reason = summary.rejection.code;
+      cart.promoCode = null;
+      return err("PROMO_REJECTED", promoCopy[reason], { promoReason: reason, code: normalized });
+    }
+    cart.updatedAt = nowIso();
+    return ok(summary);
+  });
+}
+
+export function removeCouponFromCart(cartId: string): Promise<Result<CartSummary>> {
+  return withStore((state) => {
+    const cart = state.carts[cartId];
+    if (!cart) return fail("EMPTY_CART");
+    cart.promoCode = null;
+    cart.updatedAt = nowIso();
+    return ok(summarize(state, cart));
+  });
+}
+
+/** Product-local badges ("Extra 10% off in bag") for active automatic promos. */
+export function productPromoLabels(): Promise<Record<string, string>> {
+  return withStore((state) => {
+    const labels: Record<string, string> = {};
+    const now = new Date();
+    for (const promotion of state.promotions) {
+      if (promotion.kind !== "automatic") continue;
+      const label = productPromoLabel(promotion, now);
+      if (!label) continue;
+      for (const product of allProducts(state)) {
+        if (product.id in labels) continue;
+        const hit = evaluatePromotion(promotion, {
+          items: [{
+            lineId: product.id,
+            productId: product.id,
+            category: product.category,
+            collectionSlugs: collectionSlugsOf(product.slug),
+            qty: 1,
+            unitPricePaise: 1,
+            available: 1,
+          }],
+          subtotalPaise: 1,
+          usage: usageCounts(state, ""),
+        });
+        if (hit.ok) labels[product.id] = label;
+      }
+    }
+    return labels;
+  });
+}
+
+/* --------------------------------------------------------- Analytics (S10) */
+
+const EVENT_CAP = 20000;
+const EVENT_ID_CAP = 50000;
+
+export function recordEvents(batch: AnalyticsEvent[]): Promise<{ accepted: number; duplicates: number }> {
+  return withStore((state) => {
+    let accepted = 0;
+    let duplicates = 0;
+    for (const event of batch) {
+      if (state.eventIds.includes(event.id)) {
+        duplicates += 1;
+        continue;
+      }
+      state.eventIds.push(event.id);
+      state.events.push(event);
+      accepted += 1;
+    }
+    if (state.eventIds.length > EVENT_ID_CAP) {
+      state.eventIds = state.eventIds.slice(state.eventIds.length - EVENT_ID_CAP);
+    }
+    if (state.events.length > EVENT_CAP) {
+      state.events = state.events.slice(state.events.length - EVENT_CAP);
+    }
+    return { accepted, duplicates };
+  });
+}
+
+export function listEvents(fromIso: string, toIso: string): Promise<AnalyticsEvent[]> {
+  return withStore((state) =>
+    state.events.filter((event) => event.at >= fromIso && event.at < toIso),
+  );
+}
+
+/** Nightly rollup to daily_product_stats (sessions/counts from events, money from orders). */
+export function rollupDailyProductStats(days: string[]): Promise<number> {
+  return withStore((state) => {
+    let written = 0;
+    for (const day of days) {
+      const dayEvents = state.events.filter((event) => istDayOf(event.at) === day);
+      const productIds = new Set<string>([""]);
+      for (const event of dayEvents) if (event.productId) productIds.add(event.productId);
+      for (const order of state.orders) {
+        if (istDayOf(order.createdAt) !== day) continue;
+        for (const item of order.items) productIds.add(item.variantId);
+      }
+      for (const productId of productIds) {
+        const views = dayEvents.filter((event) => event.type === "page_view" && (event.productId ?? "") === productId);
+        const sessions = new Set(views.map((event) => event.sessionId));
+        const purchases = dayEvents.filter((event) => event.type === "purchase").length;
+        let units = 0;
+        let salesPaise = 0;
+        for (const order of state.orders) {
+          if (istDayOf(order.createdAt) !== day) continue;
+          if (["cancelled", "payment_failed"].includes(order.status)) continue;
+          for (const item of order.items) {
+            if (productId !== "" && item.variantId !== productId) continue;
+            units += item.qty;
+            salesPaise += item.lineTotalPaise - item.discountPaise;
+          }
+        }
+        const stat: DailyProductStat = {
+          day,
+          productId,
+          pageViews: views.length,
+          pdpSessions: productId === "" ? 0 : sessions.size,
+          addToCarts: dayEvents.filter((event) => event.type === "add_to_cart" && (event.productId ?? "") === productId).length,
+          beginCheckouts: productId === "" ? dayEvents.filter((event) => event.type === "begin_checkout").length : 0,
+          purchases: productId === "" ? purchases : 0,
+          units,
+          salesPaise,
+        };
+        const existing = state.dailyProductStats.find((row) => row.day === day && row.productId === productId);
+        if (existing) Object.assign(existing, stat);
+        else state.dailyProductStats.push(stat);
+        written += 1;
+      }
+    }
+    return written;
+  });
+}
+
+export function listDailyProductStats(): Promise<DailyProductStat[]> {
+  return withStore((state) => [...state.dailyProductStats]);
+}
+
+import { istDayOf } from "@/lib/time/ist";
+
+export { istDayOf };
+
+/* -------------------------------------------------------- Settlements (S10) */
+
+export function saveSettlements(
+  settlements: StoredSettlement[],
+  items: StoredSettlementItem[],
+): Promise<{ created: number; items: number }> {
+  return withStore((state) => {
+    let created = 0;
+    for (const settlement of settlements) {
+      const existing = state.settlements.find((row) => row.id === settlement.id);
+      if (existing) Object.assign(existing, settlement);
+      else {
+        state.settlements.push(settlement);
+        created += 1;
+      }
+    }
+    let stored = 0;
+    for (const item of items) {
+      const exists = state.settlementItems.some(
+        (row) => row.settlementId === item.settlementId && row.paymentId === item.paymentId,
+      );
+      if (!exists) {
+        state.settlementItems.push(item);
+        stored += 1;
+      }
+    }
+    return { created, items: stored };
+  });
+}
+
+export function listSettlements(): Promise<StoredSettlement[]> {
+  return withStore((state) =>
+    [...state.settlements].sort((a, b) => b.settledOn.localeCompare(a.settledOn)),
+  );
+}
+
+export function listSettlementItems(): Promise<StoredSettlementItem[]> {
+  return withStore((state) => [...state.settlementItems]);
+}
+
+export function listCapturedPayments(): Promise<{
+  id: string;
+  orderId: string;
+  providerPaymentId: string | null;
+  amountPaise: number;
+  status: string;
+  at: string;
+}[]> {
+  return withStore((state) => [...state.payments]);
+}
+
+export function notify(
+  kind: HubNotification["kind"],
+  title: string,
+  body: string,
+  link = "",
+): Promise<HubNotification> {
+  return withStore((state) => {
+    const duplicate = state.notifications.find(
+      (item) => item.kind === kind && item.title === title && item.readAt === null,
+    );
+    if (duplicate) return duplicate;
+    const notification: HubNotification = {
+      id: uid("ntf"),
+      kind,
+      title,
+      body,
+      link,
+      readAt: null,
+      createdAt: nowIso(),
+    };
+    state.notifications.unshift(notification);
+    state.notifications = state.notifications.slice(0, 200);
+    return notification;
+  });
+}
+
+export function listNotifications(): Promise<HubNotification[]> {
+  return withStore((state) => [...state.notifications]);
+}
+
+export function markNotificationRead(id: string): Promise<boolean> {
+  return withStore((state) => {
+    const notification = state.notifications.find((item) => item.id === id);
+    if (!notification || notification.readAt) return false;
+    notification.readAt = nowIso();
+    return true;
+  });
+}
+
+export function markCodCollected(
+  period: { periodStart: string; periodEnd: string; amountPaise: number },
+  courierNote: string,
+  actor: string,
+): Promise<Result<CodCollection>> {
+  return withStore((state) => {
+    const existing = state.codCollections.find(
+      (row) => row.periodStart === period.periodStart && row.periodEnd === period.periodEnd,
+    );
+    if (existing) {
+      existing.status = "collected";
+      existing.courierNote = courierNote;
+      existing.collectedAt = nowIso();
+      return ok(existing);
+    }
+    const row: CodCollection = {
+      id: uid("cod"),
+      periodStart: period.periodStart,
+      periodEnd: period.periodEnd,
+      amountPaise: period.amountPaise,
+      status: "collected",
+      courierNote,
+      collectedAt: nowIso(),
+    };
+    state.codCollections.push(row);
+    state.audit.push({
+      id: uid("aud"),
+      actorId: actor,
+      action: "cod_collected",
+      entity: "cod_collection",
+      entityId: row.id,
+      diff: { amountPaise: period.amountPaise },
+      at: nowIso(),
+    });
+    return ok(row);
+  });
+}
+
+export function listCodCollections(): Promise<CodCollection[]> {
+  return withStore((state) => [...state.codCollections]);
+}
+
+/* ----------------------------------------------------- Buyer messages (S10) */
+
+export function createThread(input: {
+  orderId: string | null;
+  customerEmail: string;
+  subject: string;
+  body: string;
+  direction?: "in" | "out";
+  sentVia?: MessageRecord["sentVia"];
+}): Promise<{ thread: MessageThread; message: MessageRecord }> {
+  return withStore((state) => {
+    const now = nowIso();
+    const thread: MessageThread = {
+      id: uid("thr"),
+      orderId: input.orderId,
+      customerEmail: input.customerEmail.toLowerCase(),
+      subject: input.subject.slice(0, 120),
+      status: input.direction === "out" ? "waiting" : "open",
+      lastMessageAt: now,
+      createdAt: now,
+    };
+    const message: MessageRecord = {
+      id: uid("msg"),
+      threadId: thread.id,
+      direction: input.direction ?? "in",
+      body: input.body,
+      attachments: [],
+      sentVia: input.sentVia ?? "form",
+      sentAt: now,
+    };
+    state.messageThreads.push(thread);
+    state.messages.push(message);
+    return { thread, message };
+  });
+}
+
+export function appendMessage(input: {
+  threadId: string;
+  direction: "in" | "out";
+  body: string;
+  attachments?: { name: string; url: string }[];
+  sentVia?: MessageRecord["sentVia"];
+}): Promise<Result<MessageRecord>> {
+  return withStore((state) => {
+    const thread = state.messageThreads.find((item) => item.id === input.threadId);
+    if (!thread) return fail("NOT_FOUND");
+    const now = nowIso();
+    const message: MessageRecord = {
+      id: uid("msg"),
+      threadId: thread.id,
+      direction: input.direction,
+      body: input.body,
+      attachments: input.attachments ?? [],
+      sentVia: input.sentVia ?? "form",
+      sentAt: now,
+    };
+    state.messages.push(message);
+    thread.lastMessageAt = now;
+    if (thread.status === "closed") thread.status = "open";
+    else thread.status = input.direction === "out" ? "waiting" : "open";
+    return ok(message);
+  });
+}
+
+export function listThreads(): Promise<MessageThread[]> {
+  return withStore((state) =>
+    [...state.messageThreads].sort((a, b) => b.lastMessageAt.localeCompare(a.lastMessageAt)),
+  );
+}
+
+export function threadsForOrder(orderId: string): Promise<MessageThread[]> {
+  return withStore((state) =>
+    state.messageThreads
+      .filter((thread) => thread.orderId === orderId)
+      .sort((a, b) => b.lastMessageAt.localeCompare(a.lastMessageAt)),
+  );
+}
+
+export function getThreadWithMessages(id: string): Promise<{ thread: MessageThread; messages: MessageRecord[] } | null> {
+  return withStore((state) => {
+    const thread = state.messageThreads.find((item) => item.id === id);
+    if (!thread) return null;
+    return {
+      thread: { ...thread },
+      messages: state.messages
+        .filter((message) => message.threadId === id)
+        .sort((a, b) => a.sentAt.localeCompare(b.sentAt))
+        .map((message) => ({ ...message })),
+    };
+  });
+}
+
+export function findThreadByReplyAddress(token: string): Promise<MessageThread | null> {
+  return withStore((state) => state.messageThreads.find((thread) => thread.id === token) ?? null);
+}
+
+export function setThreadStatus(id: string, status: MessageThread["status"]): Promise<Result<MessageThread>> {
+  return withStore((state) => {
+    const thread = state.messageThreads.find((item) => item.id === id);
+    if (!thread) return fail("NOT_FOUND");
+    thread.status = status;
+    return ok(thread);
+  });
+}
+
+export function listSavedReplies(): Promise<SavedReply[]> {
+  return withStore((state) => [...state.savedReplies].sort((a, b) => a.title.localeCompare(b.title)));
+}
+
+export function saveSavedReply(
+  input: { id?: string; title: string; body: string },
+): Promise<Result<SavedReply>> {
+  return withStore((state) => {
+    const now = nowIso();
+    const existing = input.id ? state.savedReplies.find((item) => item.id === input.id) : undefined;
+    if (existing) {
+      existing.title = input.title;
+      existing.body = input.body;
+      existing.updatedAt = now;
+      return ok(existing);
+    }
+    if (state.savedReplies.some((item) => item.title === input.title)) {
+      return fail("ALREADY_EXISTS", { reason: "title" });
+    }
+    const reply: SavedReply = { id: uid("tpl"), title: input.title, body: input.body, updatedAt: now };
+    state.savedReplies.push(reply);
+    return ok(reply);
+  });
+}
+
+export function deleteSavedReply(id: string): Promise<boolean> {
+  return withStore((state) => {
+    const before = state.savedReplies.length;
+    state.savedReplies = state.savedReplies.filter((item) => item.id !== id);
+    return state.savedReplies.length < before;
+  });
+}
+
+/* ------------------------------------------------------ Account health (S10) */
+
+export function saveHealthSnapshot(metrics: Record<string, number>): Promise<HealthSnapshot> {
+  return withStore((state) => {
+    const snapshot: HealthSnapshot = { id: uid("hs"), computedAt: nowIso(), metrics };
+    state.healthSnapshots.unshift(snapshot);
+    state.healthSnapshots = state.healthSnapshots.slice(0, 90);
+    return snapshot;
+  });
+}
+
+export function listHealthSnapshots(): Promise<HealthSnapshot[]> {
+  return withStore((state) => [...state.healthSnapshots]);
+}
+
+/* ------------------------------------------------------------ Reviews (S10) */
+
+export function replyToReview(id: string, body: string, actor: string): Promise<Result<ReviewReply>> {
+  return withStore((state) => {
+    const review = state.reviews.find((item) => item.id === id);
+    if (!review) return fail("NOT_FOUND");
+    state.reviewReplies = state.reviewReplies.filter((row) => row.reviewId !== id);
+    const reply: ReviewReply = { id: uid("rr"), reviewId: id, body, at: nowIso() };
+    state.reviewReplies.push(reply);
+    state.audit.push({
+      id: uid("aud"),
+      actorId: actor,
+      action: "reply_review",
+      entity: "review",
+      entityId: id,
+      diff: { body },
+      at: nowIso(),
+    });
+    return ok(reply);
+  });
+}
+
+export function repliesFor(productId: string): Promise<Record<string, string>> {
+  return withStore((state) => {
+    const ids = new Set(state.reviews.filter((item) => item.productId === productId).map((item) => item.id));
+    const map: Record<string, string> = {};
+    for (const reply of state.reviewReplies) {
+      if (ids.has(reply.reviewId)) map[reply.reviewId] = reply.body;
+    }
+    return map;
+  });
+}
+
+export function allReviewReplies(): Promise<ReviewReply[]> {
+  return withStore((state) => [...state.reviewReplies]);
 }
