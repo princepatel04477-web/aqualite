@@ -220,7 +220,7 @@ export type ReviewReply = {
   at: string;
 };
 
-type Settings = {
+export type Settings = {
   shippingThresholdPaise: number;
   shippingFeePaise: number;
   codFeePaise: number;
@@ -231,6 +231,9 @@ type Settings = {
   announcements: string[];
   leadTimeDays?: number;
   targetCoverDays?: number;
+  business?: { legalName: string; brandName: string; gstin: string; panLast4: string; registeredAddress: string; supportEmail: string; supportPhone: string; grievanceOfficer: string; logoUrl: string };
+  returns?: { exchangeAllowed: boolean; restockingPercent: number; reasons: string[] };
+  security?: { idleHours: 12; requireMfa: boolean; reauthMinutes: number };
 };
 
 type State = {
@@ -294,6 +297,9 @@ const defaultSettings = (): Settings => ({
     "COD available",
     "7-day easy returns",
   ],
+  business: { legalName: "Aqualite", brandName: "Aqualite", gstin: "27AAAAA0000A1Z5", panLast4: "0000", registeredAddress: "Update your registered address", supportEmail: "support@aqualite.in", supportPhone: "+91 00000 00000", grievanceOfficer: "Aqualite Grievance Officer", logoUrl: "" },
+  returns: { exchangeAllowed: true, restockingPercent: 0, reasons: ["Size or fit", "Damaged in transit", "Wrong item"] },
+  security: { idleHours: 12, requireMfa: true, reauthMinutes: 15 },
 });
 
 function emptyState(): State {
@@ -1250,6 +1256,10 @@ export function listOutbox(): Promise<EmailOut[]> {
 
 export function getSettings(): Promise<Settings> {
   return withStore((state) => state.settings);
+}
+
+export function listAudit(): Promise<Audit[]> {
+  return withStore((state) => [...state.audit].sort((a, b) => b.at.localeCompare(a.at)));
 }
 
 export function updateSettings(patch: Partial<Settings>, actor: string): Promise<Settings> {
