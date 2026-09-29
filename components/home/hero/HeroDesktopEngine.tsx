@@ -36,10 +36,14 @@ export function HeroDesktopEngine({
 }) {
   const { allowCursorFX, allowPinning, reduced, tier } = useMotionPolicy();
   const activeIndexRef = useRef(activeIndex);
-  activeIndexRef.current = activeIndex;
   const floatTween = useRef<gsap.core.Tween | null>(null);
   const completeRef = useRef(onComplete);
-  completeRef.current = onComplete;
+  /* Latest-value refs — written in an effect so render stays pure; GSAP
+     callbacks read them only after commit. */
+  useEffect(() => {
+    activeIndexRef.current = activeIndex;
+    completeRef.current = onComplete;
+  }, [activeIndex, onComplete]);
 
   // Buoyancy idle float on exactly one shoe — started by handover or idle state.
   const startFloat = useCallback(

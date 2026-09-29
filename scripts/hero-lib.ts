@@ -90,7 +90,6 @@ export async function encodeLadder(
   for (const width of widths) {
     if (width > source.width * 1.45) continue; // never upscale beyond recognition
     emitted.push(width);
-    const resized = sharp(source.path).resize(width, null, { withoutEnlargement: false });
 
     // AVIF, re-encoded downward until inside budget.
     let quality = 62;

@@ -9,6 +9,11 @@ Footwear store prototype. India-first: INR, GST-inclusive MRP, UK sizing primary
 - Server secrets stay behind `import "server-only"`.
 - Colour, type, spacing, duration and easing come from `styles/tokens.css` and `lib/motion/tokens.ts`.
 
+## Red discipline (Ivory & Red)
+- Storefront: red appears ONLY as primary CTA (one per section), wordmark, sale price/%, and one editorial accent per section. Never a red section background, never red body text. Italic headline phrase = `--red-ink`.
+- Seller Hub: red = top bar, primary actions, active nav, selection (`--red-tint`). Errors use `--danger` WITH an icon — never bare red.
+- All text tokens must clear WCAG AA (≥4.5:1) on `--ivory`, `--paper` and `--linen`; `--on-red` on `--red`. `npm run tokens:check` fails on raw hex outside `styles/tokens.css` — colours live only there (see `docs/design/IVORY_RED.md`).
+
 ## Animation ownership
 - GSAP: scroll-driven and timeline motion.
 - Motion (`motion/react`): presence, gestures, layout.

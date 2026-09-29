@@ -39,11 +39,13 @@ export type SceneTransition = {
 
 const SCRAMBLE_CHARS = "·—/\\|=+~";
 
-/** Token channel reader — colors come from tokens.css, never literals. */
+/** Token channel reader — colors come from tokens.css, never literals.
+    Fallback mirrors the `--ink` channels so a failed read stays legible
+    on the ivory surface (S01: was the old Deep Water `--foam` value). */
 function tokenRgb(name: string): string {
   const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const parts = raw.split(/[\s,]+/).map(Number);
-  if (parts.length < 3 || parts.some((part) => Number.isNaN(part))) return "rgb(238 241 238)";
+  if (parts.length < 3 || parts.some((part) => Number.isNaN(part))) return "rgb(27 23 20)";
   return `rgb(${parts[0]} ${parts[1]} ${parts[2]})`;
 }
 

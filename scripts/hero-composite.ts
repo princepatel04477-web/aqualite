@@ -29,7 +29,6 @@ import {
   MOBILE_WIDTHS,
   OUT_ROOT,
   ROOT,
-  blurPlaceholder,
   encodeLadder,
 } from "./hero-lib.ts";
 
