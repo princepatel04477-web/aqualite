@@ -53,6 +53,12 @@ export type CheckoutResult = {
   keyId: string | null;
 };
 
+function confirmationLine(order: { discountPaise: number; promotionCode: string | null; promotionName: string | null }): string {
+  if (order.discountPaise <= 0) return "";
+  const label = order.promotionCode ?? order.promotionName ?? "Your offer";
+  return ` ${label} saved you ${(order.discountPaise / 100).toFixed(0)} INR.`;
+}
+
 export async function startCheckout(input: unknown): Promise<Result<CheckoutResult>> {
   const parsed = checkoutSchema.safeParse(input);
   if (!parsed.success) return err("VALIDATION", errorCopy.VALIDATION);
@@ -79,7 +85,7 @@ export async function startCheckout(input: unknown): Promise<Result<CheckoutResu
         await recordOutbox(
           placed.data.email,
           `Order ${placed.data.number} confirmed`,
-          `Thank you. ${placed.data.number} is confirmed for cash on delivery. Total ${placed.data.totalPaise / 100} INR.`,
+          `Thank you. ${placed.data.number} is confirmed for cash on delivery. Total ${placed.data.totalPaise / 100} INR.${confirmationLine(placed.data)}`,
         );
       }
       return ok({
@@ -140,7 +146,7 @@ export async function confirmDemoPayment(input: unknown): Promise<Result<{ numbe
   if (cartId) await clearCart(cartId);
   const first = await markConfirmationSent(order.id);
   if (first) {
-    await recordOutbox(order.email, `Order ${order.number} paid`, `Payment received for ${order.number}.`);
+    await recordOutbox(order.email, `Order ${order.number} paid`, `Payment received for ${order.number}.${confirmationLine(order)}`);
   }
   return ok({ number: order.number, accessToken: order.accessToken });
 }
@@ -177,7 +183,7 @@ export async function confirmRazorpayPayment(
   if (cartId) await clearCart(cartId);
   const first = await markConfirmationSent(order.id);
   if (first) {
-    await recordOutbox(order.email, `Order ${order.number} paid`, `Payment received for ${order.number}.`);
+    await recordOutbox(order.email, `Order ${order.number} paid`, `Payment received for ${order.number}.${confirmationLine(order)}`);
   }
   return ok({ number: order.number, accessToken: order.accessToken });
 }

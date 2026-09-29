@@ -4,7 +4,7 @@ import { readCartId } from "@/lib/cart/cookie";
 import { getCart } from "@/lib/store/engine";
 import { formatINR } from "@/lib/money";
 import { Heading } from "@/components/ui/Heading";
-import { Button } from "@/components/ui/Button";
+import { BagTotals } from "@/components/cart/BagTotals";
 
 export const metadata = { title: "Bag" };
 
@@ -36,12 +36,7 @@ export default async function BagPage() {
               </li>
             ))}
           </ul>
-          <aside className="h-fit border border-hairline p-6 lg:col-span-4 lg:col-start-9">
-            <p className="flex justify-between"><span>Subtotal</span><span className="tabular">{formatINR(cart.subtotalPaise)}</span></p>
-            <p className="mt-2 flex justify-between text-mist"><span>Shipping</span><span className="tabular">{formatINR(cart.shippingPaise)}</span></p>
-            <p className="mt-4 flex justify-between font-medium"><span>Total</span><span className="tabular">{formatINR(cart.totalPaise)}</span></p>
-            <Button href="/checkout" variant="primary" className="mt-6 w-full">Checkout</Button>
-          </aside>
+          <BagTotals />
         </div>
       )}
     </div>

@@ -1,4 +1,5 @@
 import type { ColorFamily, Feature, Gender, CategorySlug } from "@/content/catalog";
+import type { PromoRejectionReason } from "@/lib/pricing/promotions";
 
 export type PaymentMethod = "razorpay" | "cod";
 
@@ -41,9 +42,24 @@ export type CartLine = {
   qty: number;
   unitPricePaise: number;
   mrpPaise: number;
+  /** Gross line total (unit × qty), before promotion allocation. */
   lineTotalPaise: number;
+  /** Pro-rata promotion allocation for this line. */
+  discountPaise: number;
+  taxRateBps: number;
+  taxPaise: number;
   available: number;
   isShort: boolean;
+};
+
+/** Promotion line as surfaced to the storefront (order detail, bag, drawer). */
+export type CartPromo = {
+  promotionId: string;
+  kind: "coupon" | "automatic";
+  code: string | null;
+  name: string;
+  discountPaise: number;
+  freeShipping: boolean;
 };
 
 export type CartSummary = {
@@ -56,6 +72,12 @@ export type CartSummary = {
   totalPaise: number;
   freeShippingRemainingPaise: number;
   count: number;
+  /** Total customer saving: line discounts + shipping saved by a promo. */
+  discountPaise: number;
+  promo: CartPromo | null;
+  autoPromo: CartPromo | null;
+  /** Typed reason when an applied coupon code could not be honoured. */
+  rejection: { code: PromoRejectionReason } | null;
 };
 
 export type CardSize = {
@@ -97,6 +119,8 @@ export type ProductCardModel = {
   features: Feature[];
   keywords: string[];
   isNew: boolean;
+  /** Storefront badge for an active automatic promotion, e.g. "Extra 10% off in bag". */
+  promoLabel?: string | null;
 };
 
 export type FacetCount = { value: string; label: string; count: number };
@@ -119,6 +143,7 @@ export type ListingResult = {
 export type OrderItem = {
   id: string;
   variantId: string;
+  productId: string;
   productName: string;
   colorwayName: string;
   productSlug: string;
@@ -129,7 +154,10 @@ export type OrderItem = {
   qty: number;
   taxRateBps: number;
   taxPaise: number;
+  /** Gross line total (unit × qty), before promotion allocation. */
   lineTotalPaise: number;
+  /** Promotion allocation snapshot for this line. */
+  discountPaise: number;
 };
 
 export type OrderEvent = {
@@ -156,6 +184,12 @@ export type Order = {
   codFeePaise: number;
   taxPaise: number;
   totalPaise: number;
+  /** Snapshot: total saving at placement (line discounts + promo shipping). */
+  discountPaise: number;
+  promotionId: string | null;
+  promotionCode: string | null;
+  promotionName: string | null;
+  promotionKind: "coupon" | "automatic" | null;
   idempotencyKey: string;
   accessToken: string;
   razorpayOrderId: string | null;

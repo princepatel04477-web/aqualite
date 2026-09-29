@@ -1,4 +1,5 @@
 import type { DomainCode } from "@/lib/result";
+import type { PromoRejectionReason } from "@/lib/pricing/promotions";
 
 export const errorCopy: Record<DomainCode, string> = {
   OUT_OF_STOCK: "That size just sold out. We've updated your bag.",
@@ -13,5 +14,16 @@ export const errorCopy: Record<DomainCode, string> = {
   NOT_FOUND: "We couldn't find that.",
   PAYMENT_PROVIDER_UNAVAILABLE: "Payments are briefly unavailable. Your sizes have been released.",
   ALREADY_EXISTS: "That's already on file.",
+  PROMO_REJECTED: "That code can't be used on this bag.",
   UNEXPECTED: "Something went quiet on our side. Try again in a moment.",
+};
+
+/** Brand voice for typed promotion rejections (see lib/pricing/promotions.ts). */
+export const promoCopy: Record<PromoRejectionReason, string> = {
+  EXPIRED: "That code has run its course. The next one is worth waiting for.",
+  NOT_STARTED: "That code isn't live yet. Hold tight — it's nearly time.",
+  MIN_NOT_MET: "A little more in the bag and that code will work.",
+  USAGE_EXHAUSTED: "That code made a splash and sold through. Your bag is still priced fairly.",
+  NOT_ELIGIBLE: "That code doesn't sit right with this bag. Try another.",
+  ALREADY_USED: "You've already made the most of that code. Thank you.",
 };

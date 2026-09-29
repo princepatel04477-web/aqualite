@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { confirmDemoPayment, confirmRazorpayPayment, quoteCheckout, startCheckout } from "@/lib/orders/actions";
+import { CouponField } from "@/components/cart/CouponField";
 import { Button } from "@/components/ui/Button";
 import { formatINR } from "@/lib/money";
 import type { CartSummary } from "@/lib/commerce/types";
@@ -60,6 +61,10 @@ export function CheckoutForm({ summary, demoPayments }: { summary: CartSummary; 
       live = false;
     };
   }, [method]);
+
+  useEffect(() => {
+    window.aqTrack?.("begin_checkout");
+  }, []);
 
   return (
     <form
@@ -191,10 +196,23 @@ export function CheckoutForm({ summary, demoPayments }: { summary: CartSummary; 
             </li>
           ))}
         </ul>
-        <p className="mt-4 flex justify-between text-small text-mist"><span>Shipping</span><span className="tabular">{formatINR(summary.shippingPaise)}</span></p>
-        <p className="mt-1 flex justify-between text-small text-mist"><span>Includes GST</span><span className="tabular">{formatINR(summary.taxPaise)}</span></p>
-        {method === "cod" ? <p className="mt-1 flex justify-between text-small text-mist"><span>COD fee</span><span>₹49</span></p> : null}
-        <p className="mt-4 flex justify-between font-medium"><span>Total</span><span className="tabular">{formatINR(method === "cod" ? summary.totalPaise + 4900 : summary.totalPaise)}</span></p>
+        {quoted.autoPromo ? (
+          <p className="mt-3 flex justify-between text-small text-red-ink">
+            <span>{quoted.autoPromo.name}</span>
+            <span className="tabular">−{formatINR(quoted.autoPromo.discountPaise)}</span>
+          </p>
+        ) : null}
+        {quoted.promo ? (
+          <p className="mt-1 flex justify-between text-small text-red-ink">
+            <span>{quoted.promo.code ?? quoted.promo.name}</span>
+            <span className="tabular">−{formatINR(quoted.promo.discountPaise)}</span>
+          </p>
+        ) : null}
+        <p className="mt-3 flex justify-between text-small text-mist"><span>Shipping</span><span className="tabular">{formatINR(quoted.shippingPaise)}</span></p>
+        <p className="mt-1 flex justify-between text-small text-mist"><span>Includes GST</span><span className="tabular">{formatINR(quoted.taxPaise)}</span></p>
+        {quoted.codFeePaise > 0 ? <p className="mt-1 flex justify-between text-small text-mist"><span>COD fee</span><span className="tabular">{formatINR(quoted.codFeePaise)}</span></p> : null}
+        <p className="mt-4 flex justify-between font-medium"><span>Total</span><span className="tabular">{formatINR(quoted.totalPaise)}</span></p>
+        <CouponField onChanged={() => void quoteCheckout(method).then((result) => { if (result.ok) setQuoted(result.data); })} />
       </aside>
     </form>
   );
