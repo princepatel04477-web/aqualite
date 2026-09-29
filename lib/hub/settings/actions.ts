@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/guard";
 import { getSettings, updateSettings } from "@/lib/store/engine";
 import { err, ok, type Result } from "@/lib/result";
@@ -45,4 +44,3 @@ export async function exportAuditCsv(): Promise<Result<{ csv: string }>> {
   return ok({ csv: `${csv}\n# exported by ${admin.email}` });
 }
 
-export const settingsSectionInput = z.enum(["business", "shipping", "returns", "security"]);
