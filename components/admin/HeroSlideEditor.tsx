@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Reorder } from "motion/react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/Button";
 import { reorderHeroSlidesAction, saveHeroSlideAction } from "@/lib/admin/hero-actions";
 import { cn } from "@/lib/cn";
+import { contrastRatio, hexToRgb, readTokenChannels, type Rgb } from "@/lib/color/contrast";
 import { formatINR } from "@/lib/money";
 import { HERO_LEAD_MAX, heroRouteError, heroSlideInputSchema, type HeroSlideInput, type HeroSlideRow } from "@/lib/validation/hero";
 
@@ -59,19 +60,24 @@ function toInput(row: HeroSlideRow): HeroSlideInput {
   };
 }
 
-function luminance(hex: string): number {
-  const value = Number.parseInt(hex.slice(1), 16);
-  const channels = [(value >> 16) & 255, (value >> 8) & 255, value & 255].map((channel) => {
-    const srgb = channel / 255;
-    return srgb <= 0.03928 ? srgb / 12.92 : ((srgb + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * channels[0]! + 0.7152 * channels[1]! + 0.0722 * channels[2]!;
+/* Contrast of the slide's glowHex against the page surface (--ivory, read
+   from tokens at mount — no hex literals in code). Returns null during SSR. */
+function glowContrast(hex: string, backdrop: Rgb | null): number | null {
+  const rgb = hexToRgb(hex);
+  if (!rgb || !backdrop) return null;
+  return Math.round(contrastRatio(rgb, backdrop) * 10) / 10;
 }
 
-function contrastOnAbyss(hex: string): number {
-  const a = luminance(hex) + 0.05;
-  const b = luminance("#0B0E11") + 0.05;
-  return Math.round((Math.max(a, b) / Math.min(a, b)) * 10) / 10;
+/* Tokens never change at runtime, so a cached snapshot + no-op subscribe
+   make getComputedStyle reads safe inside useSyncExternalStore. */
+const NO_SUBSCRIBE = (): (() => void) => () => {};
+let ivoryBackdrop: Rgb | null | undefined;
+function getIvoryBackdrop(): Rgb | null {
+  if (ivoryBackdrop === undefined) ivoryBackdrop = readTokenChannels("--ivory");
+  return ivoryBackdrop;
+}
+function getNoBackdrop(): Rgb | null {
+  return null;
 }
 
 function toLocalInput(iso: string | null): string {
@@ -116,13 +122,19 @@ export function HeroSlideEditor({
   const router = useRouter();
   const [items, setItems] = useState<HeroSlideRow[]>(slides);
   const itemsRef = useRef(items);
-  itemsRef.current = items;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<EditorDraft | null>(null);
   const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"desktop" | "mobile" | null>(null);
   const [dragging, setDragging] = useState(false);
+  /* Backdrop channels read once on the client; null during SSR/hydration
+     (no mismatch — useSyncExternalStore re-renders with the snapshot). */
+  const backdrop = useSyncExternalStore(NO_SUBSCRIBE, getIvoryBackdrop, getNoBackdrop);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   const productById = useMemo(() => new Map(options.map((option) => [option.productId, option])), [options]);
 
@@ -428,7 +440,10 @@ export function HeroSlideEditor({
 
           <div className="mt-6 grid gap-6 md:grid-cols-2">
             <div>
-              <Label text="Glow colour" hint={`${contrastOnAbyss(draft.glowHex)}:1 on abyss`} />
+              <Label
+                text="Glow colour"
+                hint={`${glowContrast(draft.glowHex, backdrop) ?? "…"}:1 on ivory`}
+              />
               <div className="mt-2 flex items-center gap-3">
                 <input
                   type="color"
