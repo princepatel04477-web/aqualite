@@ -21,7 +21,12 @@ import {
   recordOutbox,
 } from "@/lib/store/engine";
 import { isDemoPayments, serverEnv } from "@/lib/env";
-import { createProviderOrder, fetchProviderPayment, verifyCheckoutSignature } from "@/lib/payments/razorpay";
+import {
+  createProviderOrder,
+  fetchProviderPayment,
+  signCheckoutPayload,
+  verifyCheckoutSignature,
+} from "@/lib/payments/razorpay";
 
 const addressSchema = z.object({
   name: z.string().min(2).max(80),
@@ -51,6 +56,8 @@ export type CheckoutResult = {
   orderId: string;
   razorpayOrderId: string | null;
   keyId: string | null;
+  demoPaymentId?: string;
+  demoSignature?: string;
 };
 
 function confirmationLine(order: { discountPaise: number; promotionCode: string | null; promotionName: string | null }): string {
@@ -64,8 +71,8 @@ export async function startCheckout(input: unknown): Promise<Result<CheckoutResu
   if (!parsed.success) return err("VALIDATION", errorCopy.VALIDATION);
   const cartId = await readCartId();
   if (!cartId) return err("EMPTY_CART", errorCopy.EMPTY_CART);
-  if (await limitIp("checkout", 10, 60)) return err("RATE_LIMITED", errorCopy.RATE_LIMITED);
-  if (await limitCart(cartId, 10)) return err("RATE_LIMITED", errorCopy.RATE_LIMITED);
+  if (await limitIp("checkout", 25, 60)) return err("RATE_LIMITED", errorCopy.RATE_LIMITED);
+  if (await limitCart(cartId, 25)) return err("RATE_LIMITED", errorCopy.RATE_LIMITED);
   const session = await readSession();
   try {
     const placed = await placeOrder({
@@ -100,6 +107,11 @@ export async function startCheckout(input: unknown): Promise<Result<CheckoutResu
       });
     }
     if (isDemoPayments()) {
+      const compactId = placed.data.id.replace(/-/g, "").slice(0, 14);
+      const demoRzpOrderId = placed.data.razorpayOrderId ?? `order_test_${compactId}`;
+      const demoRzpPaymentId = `pay_test_${compactId}`;
+      await attachRazorpay(placed.data.id, demoRzpOrderId);
+      const demoSignature = signCheckoutPayload(demoRzpOrderId, demoRzpPaymentId);
       return ok({
         orderNumber: placed.data.number,
         accessToken: placed.data.accessToken,
@@ -107,8 +119,10 @@ export async function startCheckout(input: unknown): Promise<Result<CheckoutResu
         totalPaise: placed.data.totalPaise,
         demo: true,
         orderId: placed.data.id,
-        razorpayOrderId: null,
-        keyId: null,
+        razorpayOrderId: demoRzpOrderId,
+        keyId: serverEnv.RAZORPAY_KEY_ID,
+        demoPaymentId: demoRzpPaymentId,
+        demoSignature,
       });
     }
     const provider = await createProviderOrder(placed.data.totalPaise, placed.data.number);
@@ -173,11 +187,15 @@ export async function confirmRazorpayPayment(
   }
   const order = await findOrderForPayment(parsed.data.razorpay_order_id);
   if (!order) return err("NOT_FOUND", errorCopy.NOT_FOUND);
-  const payment = await fetchProviderPayment(parsed.data.razorpay_payment_id);
-  if (!payment || payment.order_id !== parsed.data.razorpay_order_id) {
-    return err("PAYMENT_PROVIDER_UNAVAILABLE", errorCopy.PAYMENT_PROVIDER_UNAVAILABLE);
+  let verifiedAmount = order.totalPaise;
+  if (!isDemoPayments()) {
+    const payment = await fetchProviderPayment(parsed.data.razorpay_payment_id);
+    if (!payment || payment.order_id !== parsed.data.razorpay_order_id) {
+      return err("PAYMENT_PROVIDER_UNAVAILABLE", errorCopy.PAYMENT_PROVIDER_UNAVAILABLE);
+    }
+    verifiedAmount = payment.amount;
   }
-  const confirmed = await confirmPayment(order.id, payment.id, payment.amount, "razorpay-verify");
+  const confirmed = await confirmPayment(order.id, parsed.data.razorpay_payment_id, verifiedAmount, "razorpay-verify");
   if (!confirmed.ok) return confirmed;
   const cartId = await readCartId();
   if (cartId) await clearCart(cartId);
@@ -203,5 +221,3 @@ export async function loadOrder(number: string, token: string | undefined) {
   if (token && token === order.accessToken) return order;
   return null;
 }
-
-

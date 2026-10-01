@@ -80,11 +80,11 @@ export function openOrderMetrics(orders: Order[], now: Date): CountLink[] {
   const shipBy = (order: Order) => (order as Order & { shipByAt?: string }).shipByAt;
   const hasSla = open.every((order) => !!shipBy(order));
   return [
-    { label: "Pending payment", count: orders.filter((order) => order.status === "pending_payment").length, href: "/admin/orders?filter=pending_payment" },
-    { label: "Unshipped", count: open.length, href: "/admin/orders?filter=unshipped" },
-    { label: "Late", count: hasSla ? open.filter((order) => shipBy(order) && new Date(shipBy(order)!).getTime() < now.getTime()).length : null, href: "/admin/orders?filter=late", tone: "danger" },
-    { label: "Ship by today", count: hasSla ? open.filter((order) => shipBy(order) && istDay(shipBy(order)!) === today).length : null, href: "/admin/orders?filter=today" },
-    { label: "COD to confirm", count: orders.filter((order) => order.status === "cod_confirmed").length, href: "/admin/orders?filter=cod_confirmed" },
+    { label: "Pending payment", count: orders.filter((order) => order.status === "pending_payment").length, href: "/seller/orders?filter=pending_payment" },
+    { label: "Unshipped", count: open.length, href: "/seller/orders?filter=unshipped" },
+    { label: "Late", count: hasSla ? open.filter((order) => shipBy(order) && new Date(shipBy(order)!).getTime() < now.getTime()).length : null, href: "/seller/orders?filter=late", tone: "danger" },
+    { label: "Ship by today", count: hasSla ? open.filter((order) => shipBy(order) && istDay(shipBy(order)!) === today).length : null, href: "/seller/orders?filter=today" },
+    { label: "COD to confirm", count: orders.filter((order) => order.status === "cod_confirmed").length, href: "/seller/orders?filter=cod_confirmed" },
   ];
 }
 
@@ -138,8 +138,8 @@ export async function loadWidget(id: WidgetId, now = new Date()): Promise<Widget
     case "sales": return { kind: id, value: salesMetrics(snapshot.orders, now), updatedAt };
     case "orders": return { kind: id, value: openOrderMetrics(snapshot.orders, now), updatedAt };
     case "action": return { kind: id, updatedAt, value: [
-      { label: "Returns awaiting authorisation", count: snapshot.returns.filter((row) => row.status === "requested").length, href: "/admin/orders?filter=returns" },
-      { label: "Orders needing attention", count: snapshot.orders.filter((row) => row.needsAttention).length, href: "/admin/orders?filter=attention" },
+      { label: "Returns awaiting authorisation", count: snapshot.returns.filter((row) => row.status === "requested").length, href: "/seller/orders?filter=returns" },
+      { label: "Orders needing attention", count: snapshot.orders.filter((row) => row.needsAttention).length, href: "/seller/orders?filter=attention" },
       { label: "Reviews pending moderation", count: snapshot.reviews.filter((row) => row.status === "pending").length, href: "/admin" },
       { label: "Buyer messages >24h", count: null, href: "/admin" },
     ] };
@@ -158,7 +158,7 @@ export async function loadWidget(id: WidgetId, now = new Date()): Promise<Widget
     case "notifications": {
       const events: NotificationRow[] = snapshot.orders.flatMap((order) => order.events.map((event) => ({
         id: event.id, label: `Order ${order.number} · ${event.to.replaceAll("_", " ")}`, detail: event.note,
-        href: `/admin/orders/${order.number}`, at: event.at,
+        href: `/seller/orders/${order.number}`, at: event.at,
       })));
       events.sort((a, b) => b.at.localeCompare(a.at));
       return { kind: id, value: events.slice(0, 6), updatedAt };

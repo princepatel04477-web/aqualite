@@ -1,6 +1,8 @@
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
-initOpenNextCloudflareForDev();
+if (process.env.OPEN_NEXT_CF_DEV === "1") {
+  initOpenNextCloudflareForDev();
+}
 
 const isProd = process.env.NODE_ENV === "production";
 

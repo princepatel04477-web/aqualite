@@ -202,7 +202,7 @@ export default async function PaymentsPage({
                     <tr key={row.id} className="border-b border-hairline last:border-0 hover:bg-linen/50">
                       <td className="px-4 py-2.5 font-mono text-hub-id">{row.providerPaymentId ?? row.id}</td>
                       <td className="px-4 py-2.5">
-                        <Link href={`/admin/orders/${orderById.get(row.orderId)?.number ?? ""}`} className="text-red-ink">
+                        <Link href={`/seller/orders/${orderById.get(row.orderId)?.number ?? ""}`} className="text-red-ink">
                           {orderById.get(row.orderId)?.number ?? row.orderId}
                         </Link>
                       </td>

@@ -13,8 +13,8 @@ import { redirect } from "next/navigation";
 export async function sendOtpAction(input: unknown): Promise<Result<{ demoCode: string }>> {
   const parsed = z.object({ email: z.string().email() }).safeParse(input);
   if (!parsed.success) return err("VALIDATION", "Enter a valid email.");
-  if (await limitIp("otp", 8, 600)) return err("RATE_LIMITED", errorCopy.RATE_LIMITED);
-  if (await limitEmail(parsed.data.email, "otp", 3, 600)) return err("RATE_LIMITED", errorCopy.RATE_LIMITED);
+  if (await limitIp("otp", 25, 600)) return err("RATE_LIMITED", errorCopy.RATE_LIMITED);
+  if (await limitEmail(parsed.data.email, "otp", 15, 600)) return err("RATE_LIMITED", errorCopy.RATE_LIMITED);
   return sendOtp(parsed.data.email);
 }
 

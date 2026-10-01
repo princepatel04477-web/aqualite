@@ -78,7 +78,6 @@ export function HeroSceneBackdrop({
                 <div
                   data-hero-placeholder
                   className="hero-shoe aspect-[1400/1000] w-full bg-cover bg-center opacity-0"
-                  style={{ backgroundImage: `url(${slide.imageDesktopPath})` }}
                 />
               )}
             </div>

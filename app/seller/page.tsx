@@ -35,7 +35,7 @@ export default async function SellerHome() {
       {needsAttention > 0 ? (
         <p className="mb-6 rounded-hub border border-warning/50 bg-warning-tint px-4 py-3 text-hub-body">
           {needsAttention} order{needsAttention > 1 ? "s need" : " needs"} attention &mdash; payment captured but stock could not be reserved.{" "}
-          <Link href="/admin/orders" className="font-medium text-red-ink">Review orders &rarr;</Link>
+          <Link href="/seller/orders" className="font-medium text-red-ink">Review orders &rarr;</Link>
         </p>
       ) : null}
       <WidgetGrid initial={layout} initialRevision={revision}>

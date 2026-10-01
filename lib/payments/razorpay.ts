@@ -19,10 +19,14 @@ export function verifyWebhookSignature(rawBody: string, signature: string): bool
   return signaturesMatch(expected, signature);
 }
 
-export function verifyCheckoutSignature(orderId: string, paymentId: string, signature: string): boolean {
-  const expected = createHmac("sha256", serverEnv.RAZORPAY_KEY_SECRET)
+export function signCheckoutPayload(orderId: string, paymentId: string): string {
+  return createHmac("sha256", serverEnv.RAZORPAY_KEY_SECRET)
     .update(`${orderId}|${paymentId}`)
     .digest("hex");
+}
+
+export function verifyCheckoutSignature(orderId: string, paymentId: string, signature: string): boolean {
+  const expected = signCheckoutPayload(orderId, paymentId);
   return signaturesMatch(expected, signature);
 }
 

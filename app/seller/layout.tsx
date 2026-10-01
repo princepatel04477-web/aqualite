@@ -18,7 +18,7 @@ export default async function SellerLayout({ children }: { children: React.React
             <Link href="/seller/inventory/planning">Planning</Link>
             <Link href="/seller/pricing">Pricing</Link>
             <Link href="/seller/settings">Settings</Link>
-            <Link href="/admin/orders">Orders</Link>
+            <Link href="/seller/orders">Orders</Link>
             <Link href="/">Visit store ↗</Link>
           </nav>
         </div>

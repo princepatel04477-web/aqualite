@@ -136,9 +136,11 @@ export function Header({
             onClick={() => setOpen(true)}
           >
             <IconBag />
-            <span className="absolute right-1 top-1 min-w-4 font-mono text-eyebrow text-aqua">
-              <RollingDigits value={summary.count} />
-            </span>
+            {summary.count > 0 ? (
+              <span className="absolute right-1 top-1 min-w-4 font-mono text-eyebrow text-aqua">
+                <RollingDigits value={summary.count} />
+              </span>
+            ) : null}
           </button>
         </div>
       </div>
