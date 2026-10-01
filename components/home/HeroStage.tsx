@@ -39,7 +39,7 @@ export function HeroStage({
   edit: HeroThumb[];
 }) {
   const root = useRef<HTMLElement>(null);
-  const { reduced, allowCursorFX, allowPinning } = useMotionPolicy();
+  const { reduced, allowCursorFX } = useMotionPolicy();
 
   useGSAP(
     () => {
@@ -50,21 +50,20 @@ export function HeroStage({
       const meta = node.querySelectorAll("[data-meta]");
       const float = node.querySelector("[data-float]");
       const parallax = node.querySelector("[data-parallax]");
-      const scrollLayer = node.querySelector("[data-scroll]");
       const meter = node.querySelector("[data-scroll-line]");
 
       const tl = gsap.timeline({ paused: true });
-      tl.from(shoe, { y: 64, scale: 1.08, opacity: 0, duration: duration.cinematic, ease: gsapEase.tide }, 0);
+      tl.from(shoe, { y: 18, scale: 1.03, opacity: 0, duration: duration.cinematic, ease: gsapEase.tide }, 0);
       tl.from(lines, { yPercent: 110, duration: duration.slow, stagger: stagger.loose, ease: gsapEase.tide }, 0.15);
-      tl.from(meta, { y: 20, opacity: 0, duration: duration.base, stagger: stagger.base, ease: gsapEase.tide }, 0.4);
+      tl.from(meta, { y: 14, opacity: 0, duration: duration.base, stagger: stagger.base, ease: gsapEase.tide }, 0.35);
 
       const stopWait = whenIntroDone(() => tl.play());
       const fallback = window.setTimeout(() => tl.play(), 2800);
 
       const floatTween = float
         ? gsap.to(float, {
-            y: 12,
-            rotate: 1.4,
+            y: 6,
+            rotate: 1.0,
             duration: duration.cinematic * 2,
             yoyo: true,
             repeat: -1,
@@ -81,19 +80,11 @@ export function HeroStage({
           const rect = node.getBoundingClientRect();
           const px = (event.clientX - rect.left) / rect.width - 0.5;
           const py = (event.clientY - rect.top) / rect.height - 0.5;
-          xTo(px * 36);
-          yTo(py * 18);
+          xTo(px * 16);
+          yTo(py * 8);
         };
         node.addEventListener("pointermove", onMove);
       }
-
-      const scrub = allowPinning && scrollLayer
-        ? gsap.to(scrollLayer, {
-            y: -120,
-            ease: gsapEase.linear,
-            scrollTrigger: { trigger: node, start: "top top", end: "bottom top", scrub: true },
-          })
-        : null;
 
       const meterTween = meter
         ? gsap.fromTo(
@@ -108,67 +99,62 @@ export function HeroStage({
         window.clearTimeout(fallback);
         tl.kill();
         floatTween?.kill();
-        scrub?.scrollTrigger?.kill();
-        scrub?.kill();
         meterTween?.kill();
         if (onMove) node.removeEventListener("pointermove", onMove);
       };
     },
-    { scope: root, revertOnUpdate: true, dependencies: [allowCursorFX, allowPinning, reduced] },
+    { scope: root, revertOnUpdate: true, dependencies: [allowCursorFX, reduced] },
   );
 
   return (
     <section
       ref={root}
       data-header="transparent"
-      className="relative -mt-[calc(var(--header-h)+2rem)] flex min-h-[100dvh] flex-col justify-end overflow-hidden bg-abyss"
+      className="relative -mt-[calc(var(--header-h)+2rem)] flex h-[100svh] min-h-[720px] flex-col justify-between overflow-hidden bg-ivory pt-[calc(var(--header-h)+2.25rem)]"
     >
-      <TideField className="absolute inset-0 h-full w-full" />
-      <div className="hero-glow pointer-events-none absolute inset-0" />
-      <div className="hero-vignette pointer-events-none absolute inset-0" />
+      <TideField className="pointer-events-none absolute inset-0 h-full w-full" />
 
-      <div data-scroll className="pointer-events-none absolute inset-0">
-        <div data-parallax className="absolute inset-x-0 top-[4%] flex justify-center lg:top-[0%]">
-          <div data-float className="w-[min(128vw,1180px)]">
-            <div data-shoe>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/catalog/hero-tide-slide.jpg"
-                alt="Aqualite Tide Slide, black with an aqua strap, floating on dark water"
-                width={1400}
-                height={1000}
-                fetchPriority="high"
-                className="hero-shoe w-full"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="relative z-[2] page-wrap pb-8 lg:pb-10">
-        <div className="grid items-end gap-8 lg:grid-cols-12">
-          <div className="lg:col-span-8">
+      <div className="relative z-[2] page-wrap flex flex-1 flex-col justify-between pb-6">
+        <div className="relative grid flex-1 items-end gap-x-8 lg:grid-cols-12">
+          <div className="lg:col-span-6">
             <div data-meta>
-              <Eyebrow index="01" total="06">
-                {eyebrow}
-              </Eyebrow>
+              <Eyebrow className="text-ink-2">{eyebrow}</Eyebrow>
             </div>
-            <h1 className="heading-display mt-4 font-display text-display font-normal text-foam">
-              <span className="block overflow-hidden">
+            <h1 className="heading-display mt-3 max-w-[11ch] font-display text-[clamp(2.75rem,4.5vw,5.15rem)] font-normal leading-[0.94] text-ink">
+              <span className="block overflow-hidden pb-1">
                 <span data-line className="block">
                   {lead}
                 </span>
               </span>
-              <span className="block overflow-hidden">
+              <span className="block overflow-hidden pb-1">
                 <span data-line className="block">
                   <em>{emphasis}</em> {rest}
                 </span>
               </span>
             </h1>
           </div>
-          <div data-meta className="lg:col-span-4 lg:pb-2">
-            <p className="max-w-measure text-lead text-mist">{copy}</p>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+          <div data-meta className="lg:col-span-6 flex flex-col justify-end">
+            <div className="relative h-[clamp(180px,28vh,265px)] w-full">
+              <div className="hero-glow pointer-events-none absolute -inset-6 z-0" />
+              <div className="hero-contact-shadow pointer-events-none absolute inset-x-[10%] bottom-0 z-0 h-12" />
+              <div data-parallax className="relative z-[1] flex h-full w-full items-center justify-center">
+                <div data-float className="flex h-full w-full items-center justify-center">
+                  <div data-shoe className="flex h-full w-full items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/catalog/hero/tide-slide/hero-desktop-1920.jpg"
+                      alt="Aqualite Tide Slide in midnight with an aqua strap"
+                      width={1400}
+                      height={1000}
+                      fetchPriority="high"
+                      className="hero-shoe max-h-full max-w-[90%] object-contain"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p className="mt-4 max-w-[38ch] text-lead text-ink-2">{copy}</p>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
               <Button href="/shop/men" variant="primary">
                 Shop men
               </Button>
@@ -179,18 +165,18 @@ export function HeroStage({
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col gap-6 border-t border-hairline pt-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mt-4 flex flex-col gap-6 border-t border-hairline pt-4 sm:flex-row sm:items-end sm:justify-between">
           <Link href={productHref} data-meta className="group">
-            <p className="font-mono text-eyebrow uppercase text-aqua">Tide Slide</p>
-            <p className="mt-1 font-body text-h3 tabular text-foam transition-colors duration-quick ease-tide group-hover:text-sand">
+            <p className="font-mono text-eyebrow uppercase text-red-ink">Tide Slide</p>
+            <p className="mt-0.5 font-body text-h3 tabular text-ink transition-colors duration-quick ease-tide group-hover:text-red-ink">
               {price}
             </p>
           </Link>
           <ul data-meta className="flex gap-3">
             {edit.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="group block w-16 sm:w-20">
-                  <span className="stage block aspect-[4/5] overflow-hidden">
+                <Link href={item.href} className="group block w-24">
+                  <span className="stage block aspect-[16/10] overflow-hidden border border-hairline">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={item.image}
@@ -198,17 +184,17 @@ export function HeroStage({
                       className="h-full w-full object-cover transition-transform duration-slow ease-tide group-hover:scale-105"
                     />
                   </span>
-                  <span className="mt-2 block truncate font-mono text-eyebrow uppercase text-mist group-hover:text-foam">
+                  <span className="mt-1.5 block whitespace-nowrap font-mono text-[10px] uppercase text-ink-2 group-hover:text-ink">
                     {item.name}
                   </span>
                 </Link>
               </li>
             ))}
           </ul>
-          <div data-meta className="hidden items-center gap-3 font-mono text-eyebrow uppercase text-mist sm:flex">
+          <div data-meta className="hidden items-center gap-3 font-mono text-eyebrow uppercase text-ink-2 sm:flex">
             <span>Scroll</span>
-            <span className="relative h-12 w-px overflow-hidden bg-hairline">
-              <span data-scroll-line className="absolute inset-x-0 top-0 h-1/2 bg-aqua" />
+            <span className="relative h-5 w-px overflow-hidden bg-rule">
+              <span data-scroll-line className="absolute inset-x-0 top-0 h-1/2 bg-red" />
             </span>
           </div>
         </div>

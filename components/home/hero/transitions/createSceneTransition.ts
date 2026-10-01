@@ -23,25 +23,18 @@ export type SceneTransitionArgs = {
   direction: HeroDirection;
   policy: TransitionPolicy;
   slides: TransitionSlides;
-  /** Called once the incoming shoe has surfaced — resumes the Buoyancy float. */
   onFloatHandover: (index: number) => void;
-  /** Called when this transition reaches its end naturally or via complete(). */
   onSettled: (index: number) => void;
 };
 
 export type SceneTransition = {
   timeline: gsap.core.Timeline;
-  /** Jump to the end state instantly (interruptions, tests). Idempotent. */
   complete: () => void;
-  /** Jump to the end state, then tear everything down. Idempotent. */
   kill: () => void;
 };
 
 const SCRAMBLE_CHARS = "·—/\\|=+~";
 
-/** Token channel reader — colors come from tokens.css, never literals.
-    Fallback mirrors the `--ink` channels so a failed read stays legible
-    on the ivory surface (S01: was the old Deep Water `--foam` value). */
 function tokenRgb(name: string): string {
   const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const parts = raw.split(/[\s,]+/).map(Number);
@@ -68,19 +61,11 @@ function scrambleIn(element: HTMLElement, finalText: string, duration: number): 
 }
 
 /**
- * The signature scene change (H04): one GSAP timeline, 1.1–1.3s,
- * interruptible. Forward direction sinks the outgoing shoe and wets in the
- * next through a travelling wave; backward mirrors the x-offsets.
- *
- * Policy tiers: high = full timeline (wave wipe, brightness sink);
- * medium = crossfaded background, no filter, shoe motion kept;
- * low / reduced motion = 0.25s opacity crossfade only, counter without roll.
- *
- * Only transform, opacity, clip-path, filter (high tier) and the glow
- * variable animate — no layout properties. will-change is set during the
- * transition and cleared after. SplitText instances are created per
- * transition and reverted on complete so screen readers always read the
- * plain headline.
+ * Scene transition (H04 / R03):
+ * Keeps the slide change animation on the Ivory & Red palette — no dark-theme
+ * brightness dip or dark glow. Halo colour crossfades per slide, and shoe
+ * motion stays strictly inside the upper-right shoe stage so no text ever
+ * overlaps the shoe at any moment of the transition.
  */
 export function createSceneTransition(args: SceneTransitionArgs): SceneTransition {
   const { root, from, to, direction, policy, slides, onFloatHandover, onSettled } = args;
@@ -107,8 +92,6 @@ export function createSceneTransition(args: SceneTransitionArgs): SceneTransitio
   const finishers: (() => void)[] = [];
   let finished = false;
 
-  // Single convergence point: end-state visuals, cleanup, float handover.
-  // settle=false when a newer transition superseded this one (no DONE event).
   const finish = (settle: boolean): void => {
     if (finished) return;
     finished = true;
@@ -134,12 +117,10 @@ export function createSceneTransition(args: SceneTransitionArgs): SceneTransitio
     return { timeline, complete: () => jumpToEnd(true), kill: () => jumpToEnd(false) };
   }
 
-  // Exactly one floating shoe: stop both, hand over at finish.
   if (outgoingFloat) gsap.killTweensOf(outgoingFloat);
   if (incomingFloat) gsap.killTweensOf(incomingFloat);
 
   if (reduced) {
-    // Low / reduced motion: 0.25s opacity crossfade of the whole scene.
     setGlow(incomingShoe, slides.to.glowHex);
     gsap.set(outgoingShoe, { visibility: "inherit", zIndex: 1, willChange: "opacity" });
     gsap.set(incomingShoe, { visibility: "inherit", zIndex: 2, willChange: "opacity" });
@@ -160,16 +141,15 @@ export function createSceneTransition(args: SceneTransitionArgs): SceneTransitio
     return { timeline, complete: () => jumpToEnd(true), kill: () => jumpToEnd(false) };
   }
 
-  // --- High / medium tiers -------------------------------------------------
   const useWave = policy.tier === "high";
 
-  gsap.set(outgoingShoe, { visibility: "inherit", zIndex: 2, willChange: "transform, opacity, filter" });
+  gsap.set(outgoingShoe, { visibility: "inherit", zIndex: 2, willChange: "transform, opacity" });
   gsap.set(incomingShoe, { visibility: "inherit", zIndex: 3, willChange: "transform, opacity" });
   gsap.set(outgoingContent, { visibility: "inherit", willChange: "transform, opacity" });
 
-  // Outgoing shoe: sinking (t=0). Backward mirrors the x-offsets.
+  // Outgoing shoe: clean lift/settle without dark brightness dip (R03).
   const sinkVars: gsap.TweenVars = {
-    yPercent: hero.sinkY,
+    yPercent: 4,
     rotate: hero.sinkRotate * mirror,
     scale: hero.sinkScale,
     opacity: 0,
@@ -177,10 +157,8 @@ export function createSceneTransition(args: SceneTransitionArgs): SceneTransitio
     ease: "power2.in",
   };
   if (mirror === -1) sinkVars.xPercent = 2;
-  if (policy.tier === "high") sinkVars.filter = "brightness(0.6)";
   timeline.to(outgoingShoe.querySelector("[data-shoe]"), sinkVars, 0);
 
-  // Outgoing headline: Wet Ink lines rise out, italic line last (t=0).
   if (outgoingHeadline) {
     const split = SplitText.create(outgoingHeadline);
     splits.push(split);
@@ -191,10 +169,8 @@ export function createSceneTransition(args: SceneTransitionArgs): SceneTransitio
     );
   }
 
-  // Outgoing lead + CTAs (t=0.05).
-  timeline.to(outgoingMeta, { opacity: 0, y: -8, duration: hero.metaOut, ease: "power2.in" }, hero.metaOutOffset);
+  timeline.to(outgoingMeta, { opacity: 0, y: -6, duration: hero.metaOut, ease: "power2.in" }, hero.metaOutOffset);
 
-  // Incoming backdrop reveal (t=0.15): wave wipe on high, crossfade on medium.
   let wave: { tween: gsap.core.Tween; reset: () => void } | null = null;
   if (useWave) {
     wave = waveWipe(incomingShoe, hero.wave);
@@ -204,11 +180,10 @@ export function createSceneTransition(args: SceneTransitionArgs): SceneTransitio
     timeline.to(incomingShoe, { opacity: 1, duration: hero.crossfadeMedium, ease: "power2.inOut" }, hero.waveOffset);
   }
 
-  // Glow var morph (t=0.20): one variable, every reader follows.
+  // Halo colour crossfade per slide.
   setGlow(incomingShoe, slides.from.glowHex);
   timeline.add(tweenGlow(incomingShoe, slides.from.glowHex, slides.to.glowHex, hero.glow), hero.glowOffset);
 
-  // Eyebrow scramble (t=0.35), only when the eyebrow actually changes.
   if (eyebrowText && eyebrowText.textContent !== slides.to.eyebrow) {
     const original = eyebrowText.textContent ?? "";
     timeline.add(
@@ -223,11 +198,11 @@ export function createSceneTransition(args: SceneTransitionArgs): SceneTransitio
     });
   }
 
-  // Incoming shoe: surfacing (t=0.45).
+  // Incoming shoe surfaces inside the upper-right shoe stage.
   timeline.fromTo(
     incomingShoe.querySelector("[data-shoe]"),
     {
-      yPercent: hero.surfaceY,
+      yPercent: 5,
       xPercent: mirror === -1 ? -2 : 0,
       rotate: hero.surfaceRotate * mirror,
       scale: hero.surfaceScale,
@@ -245,7 +220,6 @@ export function createSceneTransition(args: SceneTransitionArgs): SceneTransitio
     hero.surfaceOffset,
   );
 
-  // Incoming headline: Wet Ink rise (t=0.55); em settles foam → sand after landing.
   if (incomingHeadline) {
     const split = SplitText.create(incomingHeadline);
     splits.push(split);
@@ -256,23 +230,22 @@ export function createSceneTransition(args: SceneTransitionArgs): SceneTransitio
       { yPercent: 0, duration: hero.headlineIn, stagger: hero.headlineInStagger, ease: gsapEase.tide },
       hero.headlineInOffset,
     );
-    const foam = tokenRgb("--foam");
-    const sand = tokenRgb("--sand");
+    const ink = tokenRgb("--ink");
+    const redInk = tokenRgb("--red-ink");
     for (const em of incomingEm) {
       timeline.fromTo(
         em,
-        { color: foam },
-        { color: sand, duration: hero.emShift, ease: "none", immediateRender: false },
+        { color: ink },
+        { color: redInk, duration: hero.emShift, ease: "none", immediateRender: false },
         hero.headlineInOffset + lastLine * hero.headlineInStagger + hero.emShift,
       );
     }
   }
 
-  // Incoming lead (t=0.75) and CTAs (t=0.85).
   if (incomingLead) {
     timeline.fromTo(
       incomingLead,
-      { opacity: 0, y: 12 },
+      { opacity: 0, y: 10 },
       { opacity: 1, y: 0, duration: hero.leadIn, ease: gsapEase.tide },
       hero.leadInOffset,
     );
@@ -286,7 +259,6 @@ export function createSceneTransition(args: SceneTransitionArgs): SceneTransitio
     );
   }
 
-  // Ripples drift once, suggesting water moving (transform only; scale guards edges).
   if (ripples) {
     timeline.fromTo(
       ripples,

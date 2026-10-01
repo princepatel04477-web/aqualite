@@ -30,7 +30,7 @@ import {
 const SLIDES = [
   {
     slug: "tide-slide",
-    quality: "render",
+    quality: "composite",
     desktopKey: "/catalog/hero-tide-slide.jpg",
     desktopBase: "/catalog/hero/tide-slide/hero-desktop",
     mobileKey: "/catalog/hero/tide-slide/hero-mobile",
@@ -38,7 +38,7 @@ const SLIDES = [
   },
   {
     slug: "pearl-slide",
-    quality: "render",
+    quality: "composite",
     desktopKey: "/catalog/hero/pearl-slide/hero-desktop",
     desktopBase: "/catalog/hero/pearl-slide/hero-desktop",
     mobileKey: "/catalog/hero/pearl-slide/hero-mobile",
@@ -46,7 +46,7 @@ const SLIDES = [
   },
   {
     slug: "cove-clog",
-    quality: "render",
+    quality: "composite",
     desktopKey: "/catalog/hero/cove-clog/hero-desktop",
     desktopBase: "/catalog/hero/cove-clog/hero-desktop",
     mobileKey: "/catalog/hero/cove-clog/hero-mobile",
@@ -54,7 +54,7 @@ const SLIDES = [
   },
   {
     slug: "harbour-clog",
-    quality: "render",
+    quality: "composite",
     desktopKey: "/catalog/hero/harbour-clog/hero-desktop",
     desktopBase: "/catalog/hero/harbour-clog/hero-desktop",
     mobileKey: "/catalog/hero/harbour-clog/hero-mobile",
@@ -62,7 +62,7 @@ const SLIDES = [
   },
   {
     slug: "reef-flip",
-    quality: "render",
+    quality: "composite",
     desktopKey: "/catalog/hero/reef-flip/hero-desktop",
     desktopBase: "/catalog/hero/reef-flip/hero-desktop",
     mobileKey: "/catalog/hero/reef-flip/hero-mobile",

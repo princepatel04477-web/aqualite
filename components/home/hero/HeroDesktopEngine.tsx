@@ -12,13 +12,6 @@ import { whenIntroDone } from "@/lib/motion/intro";
 import { duration, gsapEase, stagger } from "@/lib/motion/tokens";
 import { useMotionPolicy } from "@/lib/motion/use-motion-policy";
 
-/**
- * The desktop motion engine (H06): every GSAP-driven behaviour of the
- * showcase — first-load choreography, the H04 scene-change timeline, the
- * Buoyancy idle float, cursor parallax and the scroll scrub — plus the
- * wave-clip definition. Loaded as its own chunk behind the motion policy so
- * phones never download GSAP (showcase JS budget).
- */
 export function HeroDesktopEngine({
   rootRef,
   slides,
@@ -34,18 +27,17 @@ export function HeroDesktopEngine({
   isTransitioning: boolean;
   onComplete: (index: number) => void;
 }) {
-  const { allowCursorFX, allowPinning, reduced, tier } = useMotionPolicy();
+  const { allowCursorFX, reduced, tier } = useMotionPolicy();
   const activeIndexRef = useRef(activeIndex);
   const floatTween = useRef<gsap.core.Tween | null>(null);
   const completeRef = useRef(onComplete);
-  /* Latest-value refs — written in an effect so render stays pure; GSAP
-     callbacks read them only after commit. */
+
   useEffect(() => {
     activeIndexRef.current = activeIndex;
     completeRef.current = onComplete;
   }, [activeIndex, onComplete]);
 
-  // Buoyancy idle float on exactly one shoe — started by handover or idle state.
+  // Bounded Buoyancy float so the shoe always stays inside its upper-right stage.
   const startFloat = useCallback(
     (index: number) => {
       floatTween.current?.kill();
@@ -54,8 +46,8 @@ export function HeroDesktopEngine({
       if (!target) return;
       gsap.killTweensOf(target);
       floatTween.current = gsap.to(target, {
-        y: 12,
-        rotate: 1.4,
+        y: 6,
+        rotate: 1.0,
         duration: duration.cinematic * 2,
         yoyo: true,
         repeat: -1,
@@ -66,7 +58,6 @@ export function HeroDesktopEngine({
     [rootRef],
   );
 
-  // H04: run the scene-change timeline whenever the machine starts one.
   const stepKey = lastStep ? `${lastStep.from}-${lastStep.to}-${lastStep.direction}` : "none";
   useEffect(() => {
     const node = rootRef.current;
@@ -91,13 +82,11 @@ export function HeroDesktopEngine({
     });
     transition.timeline.play();
     return () => {
-      // Interrupted: jump the old timeline to its end state, then start fresh.
       transition.kill();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepKey, isTransitioning, tier, reduced, startFloat]);
 
-  // While idle (no transition running), the float lives on the active shoe.
   useEffect(() => {
     if (isTransitioning) return;
     if (reduced) return;
@@ -112,20 +101,18 @@ export function HeroDesktopEngine({
       const node = rootRef.current;
       if (!node || reduced) return;
 
-      // First-load choreography: slide 01 only, unchanged from the approved hero.
       const firstShoe = node.querySelector('[data-hero-shoe="0"] [data-shoe]');
       const firstLines = node.querySelectorAll('[data-hero-content="0"] [data-line]');
       const firstMeta = node.querySelectorAll('[data-hero-content="0"] [data-meta], [data-hero-band] [data-meta]');
       const meter = node.querySelector("[data-scroll-line]");
 
       const intro = gsap.timeline({ paused: true });
-      intro.from(firstShoe, { y: 64, scale: 1.08, opacity: 0, duration: duration.cinematic, ease: gsapEase.tide }, 0);
+      intro.from(firstShoe, { y: 18, scale: 1.03, opacity: 0, duration: duration.cinematic, ease: gsapEase.tide }, 0);
       intro.from(firstLines, { yPercent: 110, duration: duration.slow, stagger: stagger.loose, ease: gsapEase.tide }, 0.15);
-      intro.from(firstMeta, { y: 20, opacity: 0, duration: duration.base, stagger: stagger.base, ease: gsapEase.tide }, 0.4);
+      intro.from(firstMeta, { y: 14, opacity: 0, duration: duration.base, stagger: stagger.base, ease: gsapEase.tide }, 0.35);
       const stopWait = whenIntroDone(() => intro.play());
       const fallbackTimer = window.setTimeout(() => intro.play(), 2800);
 
-      // Cursor parallax on the active shoe stack.
       let onMove: ((event: PointerEvent) => void) | null = null;
       if (allowCursorFX) {
         const quick: { xTo: gsap.QuickToFunc; yTo: gsap.QuickToFunc }[] = [];
@@ -143,21 +130,11 @@ export function HeroDesktopEngine({
           const px = (event.clientX - rect.left) / rect.width - 0.5;
           const py = (event.clientY - rect.top) / rect.height - 0.5;
           const pair = quick[activeIndexRef.current];
-          pair?.xTo(px * 36);
-          pair?.yTo(py * 18);
+          pair?.xTo(px * 16);
+          pair?.yTo(py * 8);
         };
         node.addEventListener("pointermove", onMove);
       }
-
-      const scrollLayer = node.querySelector("[data-hero-scroll]");
-      const scrub =
-        allowPinning && scrollLayer
-          ? gsap.to(scrollLayer, {
-              y: -120,
-              ease: gsapEase.linear,
-              scrollTrigger: { trigger: node, start: "top top", end: "bottom top", scrub: true },
-            })
-          : null;
 
       const meterTween = meter
         ? gsap.fromTo(
@@ -171,15 +148,12 @@ export function HeroDesktopEngine({
         stopWait();
         window.clearTimeout(fallbackTimer);
         intro.kill();
-        scrub?.scrollTrigger?.kill();
-        scrub?.kill();
         meterTween?.kill();
         if (onMove) node.removeEventListener("pointermove", onMove);
       };
     },
-    { scope: rootRef, dependencies: [allowCursorFX, allowPinning, reduced, slides.length] },
+    { scope: rootRef, dependencies: [allowCursorFX, reduced, slides.length] },
   );
 
-  // The wave clip is only consumed by the desktop transition tier.
   return <WaveClipDef />;
 }

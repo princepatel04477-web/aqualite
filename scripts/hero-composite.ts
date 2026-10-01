@@ -1,21 +1,14 @@
 /**
- * Hero fallback compositor (H02).
+ * Hero fallback compositor (H02 / R03).
  *
- * For any slide without a photographic/rendered hero source, builds one from
- * the porcelain catalogue photo: background-keyed cutout (the porcelain stage
- * is uniform), composited onto the dark water canvas with the slide's glow,
- * a soft contact shadow and a slight tilt. Emits the same ladder as
- * scripts/hero-images.ts and flags the slide `image_quality: "composite"` in
- * the manifest — the hero shows a dev-only badge for such slides, and they
- * must be replaced before client sign-off.
- *
- * Prototype tool: luminance keying fails on porcelain-white pairs; prefer
- * real photography or the generation pipeline.
+ * Takes each porcelain catalogue photo, removes the exterior studio background
+ * via border-connected flood-fill + chroma/gradient key (preserving white pairs
+ * like Reef Flip without interior holes), places the cutout on a transparent
+ * canvas with a slight floating tilt, and emits both _src/<slug>-*.png and the
+ * responsive AVIF/WebP/JPEG ladder. The halo (10–14% opacity of the product
+ * colour) and soft contact shadow are rendered in CSS.
  *
  * Run: node --experimental-strip-types scripts/hero-composite.ts [--force <slug>]
- *   Without --force it composites only slides missing a _src/ render.
- *   --out <dir> redirects output (default public/catalog/hero) without
- *   touching the production manifest.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -25,10 +18,12 @@ import sharp from "sharp";
 import {
   DESKTOP_BUDGET_BYTES,
   DESKTOP_WIDTHS,
+  IVORY_RGB,
   MOBILE_BUDGET_BYTES,
   MOBILE_WIDTHS,
   OUT_ROOT,
   ROOT,
+  SRC_DIR,
   encodeLadder,
 } from "./hero-lib.ts";
 
@@ -38,14 +33,6 @@ const PORCELAIN: Record<string, string> = {
   "cove-clog": "/catalog/cove-clog-sage.jpg",
   "harbour-clog": "/catalog/harbour-clog-navy.jpg",
   "reef-flip": "/catalog/reef-flip-white.jpg",
-};
-
-const GLOW: Record<string, string> = {
-  "tide-slide": "#1E7F78",
-  "pearl-slide": "#B9828C",
-  "cove-clog": "#6F9A82",
-  "harbour-clog": "#2E4F7F",
-  "reef-flip": "#BFA77E",
 };
 
 const args = process.argv.slice(2);
@@ -62,44 +49,130 @@ const outRoot = argValue("--out") ? path.resolve(argValue("--out") as string) : 
 function backgroundColour(data: Buffer, width: number, height: number, channels: number): [number, number, number] {
   const picks: [number, number, number][] = [];
   for (const [fx, fy] of [
-    [0.03, 0.03],
-    [0.97, 0.03],
-    [0.03, 0.97],
-    [0.97, 0.97],
-    [0.5, 0.03],
+    [0.02, 0.02],
+    [0.98, 0.02],
+    [0.02, 0.98],
+    [0.98, 0.98],
+    [0.5, 0.02],
   ] as const) {
     const x = Math.min(width - 1, Math.max(0, Math.floor(width * fx)));
     const y = Math.min(height - 1, Math.max(0, Math.floor(height * fy)));
     const i = (y * width + x) * channels;
-    picks.push([data[i] ?? 235, data[i + 1] ?? 235, data[i + 2] ?? 235]);
+    picks.push([data[i] ?? 238, data[i + 1] ?? 238, data[i + 2] ?? 236]);
   }
   const sum = picks.reduce((acc, c) => [acc[0] + c[0], acc[1] + c[1], acc[2] + c[2]], [0, 0, 0]);
   return [sum[0] / picks.length, sum[1] / picks.length, sum[2] / picks.length];
 }
 
-/** Luminance/chroma distance key with feathered alpha, trimmed to the shoe. */
-async function cutout(file: string): Promise<Buffer> {
+/**
+ * Border-seeded flood-fill background key with feathered alpha, trimmed to the
+ * tight shoe bounding box. Flood-filling from the outer edges ensures white
+ * shoes (reef-flip) never get interior transparent holes.
+ */
+async function cutout(file: string, slug: string): Promise<Buffer> {
   const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const { width, height, channels } = info;
   const [br, bg, bb] = backgroundColour(data, width, height, channels);
+
+  const isLightPair = slug === "reef-flip";
+  const bgDistLimit = isLightPair ? 7.5 : 22;
+  const stepLimit = isLightPair ? 3.5 : 8;
+
+  const visited = new Uint8Array(width * height);
+  const isBg = new Uint8Array(width * height);
+  const queue = new Int32Array(width * height);
+  let head = 0;
+  let tail = 0;
+
+  const pushBorder = (x: number, y: number) => {
+    const idx = y * width + x;
+    if (visited[idx]) return;
+    visited[idx] = 1;
+    isBg[idx] = 1;
+    queue[tail++] = idx;
+  };
+
+  for (let x = 0; x < width; x += 1) {
+    pushBorder(x, 0);
+    pushBorder(x, height - 1);
+  }
+  for (let y = 0; y < height; y += 1) {
+    pushBorder(0, y);
+    pushBorder(width - 1, y);
+  }
+
+  const dirs = [-1, 1, -width, width];
+  while (head < tail) {
+    const curr = queue[head++]!;
+    const cx = curr % width;
+    const cj = curr * channels;
+    const cr = data[cj] ?? 0;
+    const cg = data[cj + 1] ?? 0;
+    const cb = data[cj + 2] ?? 0;
+
+    for (const d of dirs) {
+      const next = curr + d;
+      if (next < 0 || next >= width * height) continue;
+      if (visited[next]) continue;
+      const nx = next % width;
+      if (Math.abs(nx - cx) > 1) continue;
+
+      const nj = next * channels;
+      const nr = data[nj] ?? 0;
+      const ng = data[nj + 1] ?? 0;
+      const nb = data[nj + 2] ?? 0;
+
+      const distBg = Math.hypot(nr - br, ng - bg, nb - bb);
+      const stepDist = Math.hypot(nr - cr, ng - cg, nb - cb);
+
+      if (distBg <= bgDistLimit && stepDist <= stepLimit) {
+        visited[next] = 1;
+        isBg[next] = 1;
+        queue[tail++] = next;
+      }
+    }
+  }
+
   const out = Buffer.alloc(width * height * 4);
   let minX = width;
   let minY = height;
   let maxX = -1;
   let maxY = -1;
+
   for (let i = 0; i < width * height; i += 1) {
     const j = i * channels;
-    const r = data[j] ?? 0;
-    const g = data[j + 1] ?? 0;
-    const b = data[j + 2] ?? 0;
-    const distance = Math.sqrt((r - br) ** 2 + (g - bg) ** 2 + (b - bb) ** 2);
-    const raw = (distance - 14) / (58 - 14); // feather band
-    const alpha = Math.max(0, Math.min(1, raw));
+    let r = data[j] ?? 0;
+    let g = data[j + 1] ?? 0;
+    let b = data[j + 2] ?? 0;
+
+    const maxC = Math.max(r, g, b);
+    const minC = Math.min(r, g, b);
+    const sat = maxC - minC;
+    const lum = (r + g + b) / 3;
+    const dist = Math.hypot(r - br, g - bg, b - bb);
+
+    // Warm neutral studio floor/shadow tones toward Ivory (#FAF6EE) so shadow
+    // edges blend seamlessly with zero grey contour ring.
+    if (sat < 10 && lum > 165) {
+      const w = Math.max(0, Math.min(1, (lum - 165) / 73));
+      r = Math.min(255, Math.round(r + (IVORY_RGB.r - br) * w));
+      g = Math.min(255, Math.round(g + (IVORY_RGB.g - bg) * w));
+      b = Math.min(255, Math.round(b + (IVORY_RGB.b - bb) * w));
+    }
+
+    let alpha = 255;
+    if (isBg[i]) {
+      alpha = 0;
+    } else if (!isLightPair && dist < 24) {
+      alpha = Math.round(Math.max(0, Math.min(1, (dist - 8) / 16)) * 255);
+    }
+
     out[i * 4] = r;
     out[i * 4 + 1] = g;
     out[i * 4 + 2] = b;
-    out[i * 4 + 3] = Math.round(alpha * 255);
-    if (alpha > 0.03) {
+    out[i * 4 + 3] = alpha;
+
+    if (alpha > 18) {
       const x = i % width;
       const y = Math.floor(i / width);
       if (x < minX) minX = x;
@@ -108,141 +181,110 @@ async function cutout(file: string): Promise<Buffer> {
       if (y > maxY) maxY = y;
     }
   }
-  // Feather the mask itself so edges sit in the water.
+
+  // Feather the alpha mask edge by 2.2px so the cutout sits seamlessly on ivory.
   const alphaBlurred = await sharp(out, { raw: { width, height, channels: 4 } })
     .extractChannel(3)
-    .blur(1.2)
+    .blur(2.2)
     .toBuffer();
   const final = Buffer.from(out);
   for (let i = 0; i < width * height; i += 1) {
     final[i * 4 + 3] = alphaBlurred[i] ?? 0;
   }
-  const pad = 6;
+
+  const pad = 12;
   const left = Math.max(0, minX - pad);
   const top = Math.max(0, minY - pad);
   const cutWidth = Math.min(width - left, maxX - minX + pad * 2);
   const cutHeight = Math.min(height - top, maxY - minY + pad * 2);
+
   return sharp(final, { raw: { width, height, channels: 4 } })
     .extract({ left, top, width: Math.max(1, cutWidth), height: Math.max(1, cutHeight) })
     .png()
     .toBuffer();
 }
 
-function canvasSvg(kind: "desktop" | "mobile", glow: string): string {
-  const width = kind === "desktop" ? 2560 : 1080;
-  const height = kind === "desktop" ? 1440 : 1350;
-  const cx = kind === "desktop" ? width * 0.66 : width * 0.5;
-  const cy = kind === "desktop" ? height * 0.42 : height * 0.32;
-  const radius = kind === "desktop" ? width * 0.3 : width * 0.55;
-  const ripples = Array.from({ length: 9 }, (_, i) => {
-    const y = Math.round(height * (0.55 + i * 0.05));
-    return `<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="#203236" stroke-width="1" opacity="${(0.05 - i * 0.004).toFixed(3)}" />`;
-  }).join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0B1417"/>
-      <stop offset="1" stop-color="#07090B"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="${glow}" stop-opacity="0.55"/>
-      <stop offset="0.45" stop-color="${glow}" stop-opacity="0.22"/>
-      <stop offset="1" stop-color="${glow}" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="${width}" height="${height}" fill="url(#bg)"/>
-  <ellipse cx="${cx}" cy="${cy}" rx="${radius}" ry="${radius * 0.78}" fill="url(#glow)"/>
-  ${ripples}
-</svg>`;
-}
+type Source_ = { path: string; width: number; height: number };
 
 async function compose(kind: "desktop" | "mobile", slug: string, outDir: string): Promise<Source_ | null> {
   const porcelainPath = path.join(ROOT, "public", PORCELAIN[slug] ?? "");
   if (!fs.existsSync(porcelainPath)) return null;
-  const width = kind === "desktop" ? 2560 : 1080;
-  const height = kind === "desktop" ? 1440 : 1350;
-  const cut = await cutout(porcelainPath);
-  const cutMeta = await sharp(cut).metadata();
-  // The trimmed shoe must fill ~55–60% of frame width on desktop, ~72vw mobile.
-  const targetWidth = Math.round(width * (kind === "desktop" ? 0.57 : 0.72));
-  const targetByWidth = {
-    width: targetWidth,
-    height: Math.round((targetWidth * (cutMeta.height ?? 1)) / (cutMeta.width ?? 1)),
-  };
-  const targetByHeight = {
-    width: Math.round(((height * 0.62) * (cutMeta.width ?? 1)) / (cutMeta.height ?? 1)),
-    height: Math.round(height * 0.62),
-  };
-  const box = kind === "desktop" && targetByWidth.height > targetByHeight.height ? targetByHeight : targetByWidth;
-  const shoe = await sharp(cut)
-    .resize(box.width, box.height, { withoutEnlargement: false })
-    .rotate(kind === "desktop" ? -6 : -4, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+
+  // Transparent canvas framed around the shoe so the shoe container in cols 6-12
+  // owns its exact bounding box and CSS renders the halo + contact shadow.
+  const width = kind === "desktop" ? 1920 : 1080;
+  const height = kind === "desktop" ? 1120 : 960;
+
+  const cut = await cutout(porcelainPath, slug);
+  const rotated = await sharp(cut)
+    .rotate(kind === "desktop" ? -5 : -4, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .png()
+    .toBuffer();
+
+  const maxShoeWidth = Math.round(width * (kind === "desktop" ? 0.84 : 0.84));
+  const maxShoeHeight = Math.round(height * (kind === "desktop" ? 0.82 : 0.78));
+  const shoe = await sharp(rotated)
+    .resize(maxShoeWidth, maxShoeHeight, { fit: "inside", withoutEnlargement: false })
     .png()
     .toBuffer();
   const shoeMeta = await sharp(shoe).metadata();
 
-  // Contact shadow: soft dark ellipse under the shoe.
-  const shadowWidth = Math.round(shoeMeta.width ?? box.width);
-  const shadowHeight = Math.round((shoeMeta.height ?? box.height) * 0.22);
-  const shadow = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${shadowWidth}" height="${shadowHeight}">
-      <ellipse cx="${shadowWidth / 2}" cy="${shadowHeight / 2}" rx="${shadowWidth * 0.44}" ry="${shadowHeight * 0.42}" fill="#000000" opacity="0.4"/>
-    </svg>`,
-  );
-  const shadowBlur = await sharp(shadow).blur(18).png().toBuffer();
+  const sw = shoeMeta.width ?? maxShoeWidth;
+  const sh = shoeMeta.height ?? maxShoeHeight;
+  const left = Math.max(0, Math.round((width - sw) / 2));
+  const top = Math.max(0, Math.round((height - sh) / 2));
 
-  const cx = kind === "desktop" ? Math.round(width * 0.64) : Math.round(width * 0.5);
-  const cy = kind === "desktop" ? Math.round(height * 0.44) : Math.round(height * 0.34);
-  const left = Math.max(0, cx - Math.round(shoeMeta.width! / 2));
-  const top = Math.max(0, cy - Math.round(shoeMeta.height! / 2));
-  const shadowTop = top + (shoeMeta.height ?? 0) - Math.round(shadowHeight * 0.35);
+  // Transparent RGBA canvas — no dark rectangle or vignette!
+  const composed = sharp({
+    create: {
+      width,
+      height,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .composite([{ input: shoe, left, top }])
+    .png({ compressionLevel: 9 });
 
-  const canvas = sharp(Buffer.from(canvasSvg(kind, GLOW[slug] ?? "#1E7F78")));
-  const composed = canvas
-    .composite([
-      { input: shadowBlur, left: Math.max(0, left + Math.round(shadowWidth * 0.04)), top: Math.min(height - shadowHeight, shadowTop) },
-      { input: shoe, left, top },
-    ])
-    .jpeg({ quality: 92, mozjpeg: true });
+  fs.mkdirSync(SRC_DIR, { recursive: true });
+  const srcFile = path.join(SRC_DIR, `${slug}-${kind}.png`);
+  const info = await composed.toFile(srcFile);
 
-  const outFile = path.join(outDir, "_composite", `${slug}-${kind}.jpg`);
-  fs.mkdirSync(path.dirname(outFile), { recursive: true });
-  const info = await composed.toFile(outFile);
-  return { path: outFile, width: info.width, height: info.height };
+  // Remove legacy dark JPG source if present so hero-images.ts uses the transparent PNG
+  const legacyJpg = path.join(SRC_DIR, `${slug}-${kind}.jpg`);
+  if (fs.existsSync(legacyJpg)) {
+    fs.unlinkSync(legacyJpg);
+  }
+
+  // Also update /catalog/hero-tide-slide.jpg fallback on Ivory (#FAF6EE)
+  if (slug === "tide-slide" && kind === "desktop" && outDir === OUT_ROOT) {
+    await sharp(srcFile)
+      .resize(1400, 1000, { fit: "contain", background: { ...IVORY_RGB, alpha: 1 } })
+      .flatten({ background: IVORY_RGB })
+      .jpeg({ quality: 86, mozjpeg: true })
+      .toFile(path.join(ROOT, "public", "catalog", "hero-tide-slide.jpg"));
+  }
+
+  return { path: srcFile, width: info.width, height: info.height };
 }
 
-type Source_ = { path: string; width: number; height: number };
-
-let touched = 0;
 for (const slug of Object.keys(PORCELAIN)) {
   if (forceSlug && slug !== forceSlug) continue;
-  if (!forceSlug) {
-    const hasRender =
-      fs.existsSync(path.join(ROOT, "public", "catalog", "hero", "_src", `${slug}-desktop.jpg`)) ||
-      fs.existsSync(path.join(ROOT, "public", "catalog", "hero", "_src", `${slug}-desktop.png`));
-    if (hasRender) continue;
-  }
-  touched += 1;
-  const outDir = outRoot;
-  const desktop = await compose("desktop", slug, outDir);
-  const mobile = await compose("mobile", slug, outDir);
+  const desktop = await compose("desktop", slug, outRoot);
+  const mobile = await compose("mobile", slug, outRoot);
   if (!desktop || !mobile) {
     console.error(`[hero-composite] failed for ${slug}`);
     process.exitCode = 1;
     continue;
   }
   if (outRoot !== OUT_ROOT) {
-    console.log(`[hero-composite] ${slug}: preview written under ${path.relative(ROOT, outDir)} (production manifest untouched)`);
+    console.log(`[hero-composite] ${slug}: preview written under ${path.relative(ROOT, outRoot)}`);
     continue;
   }
   const ladderDir = path.join(OUT_ROOT, slug);
   const desktopLadder = await encodeLadder(desktop, ladderDir, "hero-desktop", DESKTOP_WIDTHS, 1920, DESKTOP_BUDGET_BYTES);
   const mobileLadder = await encodeLadder(mobile, ladderDir, "hero-mobile", MOBILE_WIDTHS, 828, MOBILE_BUDGET_BYTES);
   console.log(
-    `[hero-composite] ${slug}: composited + laddered (desktop ${desktopLadder.widths.join("/")}, mobile ${mobileLadder.widths.join("/")}) — flagged composite; replace before sign-off`,
+    `[hero-composite] ${slug}: transparent cutout + ladder (desktop ${desktopLadder.widths.join("/")}, mobile ${mobileLadder.widths.join("/")})`,
   );
-}
-
-if (touched === 0) {
-  console.log("[hero-composite] nothing to do: every slide has a hero source. Use --force <slug> to preview a composite.");
 }

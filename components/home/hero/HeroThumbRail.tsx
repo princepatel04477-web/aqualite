@@ -9,11 +9,9 @@ import { cn } from "@/lib/cn";
 import { spring } from "@/lib/motion/tokens";
 
 /**
- * Thumbnail rail (H05 desktop, H06 compact mobile): one porcelain thumb per
- * scene, tablist semantics, shared-layout active indicator with the autoplay
- * progress line, hover ripple and 250ms hover preload. No truncated labels
- * anywhere — desktop shows full names under each thumb, compact shows the
- * active name once beneath the snap row.
+ * Thumbnail rail (H05 desktop, H06 compact mobile, R03 Defect 5 & 9):
+ * 5 porcelain thumbs with full product names (never truncated), active thumb
+ * red progress line. Sized to fit comfortably in 1024..1920 and 100svh.
  */
 export function HeroThumbRail({
   slides,
@@ -60,16 +58,15 @@ export function HeroThumbRail({
   };
 
   return (
-    <div>
+    <div data-hero-thumb-rail>
       <div
         role="tablist"
         aria-label="Featured scenes"
         data-meta
         className={cn(
-          "flex items-end overflow-x-auto py-1 no-scrollbar",
-          compact ? "w-full snap-x snap-mandatory gap-3" : "gap-3 sm:gap-4 xl:gap-6",
+          "flex items-end py-1 no-scrollbar",
+          compact ? "w-full justify-between gap-2" : "gap-2 xl:gap-3.5",
         )}
-        style={compact ? undefined : { scrollSnapType: "x proximity" }}
       >
         {slides.map((slide, index) => {
           const active = index === activeIndex;
@@ -87,18 +84,18 @@ export function HeroThumbRail({
               onMouseLeave={compact ? undefined : onLeave}
               className={cn(
                 "hero-thumb group relative block shrink-0 cursor-pointer text-left",
-                compact ? "w-14 snap-center pb-1" : "pb-7",
+                compact ? "flex-1 pb-2" : "w-[96px] xl:w-[110px] 2xl:w-[118px] pb-9",
                 hovered === index ? "hero-thumb-hover" : "",
               )}
             >
               <motion.span
                 className={cn(
-                  "stage relative block overflow-hidden",
-                  compact ? "aspect-[4/5] w-14" : "aspect-[4/5] w-[120px] xl:w-[160px]",
+                  "stage relative block overflow-hidden border border-hairline",
+                  compact ? "aspect-[4/3] w-full" : "aspect-[16/10] w-full",
                 )}
                 animate={{
-                  y: active ? (compact ? -4 : -8) : 0,
-                  opacity: active ? 1 : hovered === index ? 0.85 : 0.55,
+                  y: active ? (compact ? -2 : -4) : 0,
+                  opacity: active ? 1 : hovered === index ? 0.9 : 0.68,
                 }}
                 transition={active ? { type: "spring", ...spring.soft } : { duration: 0.24, ease: "easeOut" }}
               >
@@ -114,10 +111,16 @@ export function HeroThumbRail({
               </motion.span>
               {compact ? null : (
                 <span className="absolute inset-x-0 bottom-0 left-0">
-                  <span className="block whitespace-nowrap font-mono text-[11px] uppercase leading-4 tracking-[0.14em] text-mist transition-colors duration-quick ease-tide group-hover:text-foam">
+                  <span
+                    data-thumb-name
+                    className={cn(
+                      "block whitespace-nowrap font-mono text-[10px] xl:text-[11px] uppercase leading-4 tracking-[0.04em] xl:tracking-[0.08em] transition-colors duration-quick ease-tide",
+                      active ? "font-medium text-ink" : "text-ink-2 group-hover:text-ink",
+                    )}
+                  >
                     {slide.product.name}
                   </span>
-                  <span className="block whitespace-nowrap font-mono text-[11px] uppercase leading-4 tracking-[0.14em] text-mist/70">
+                  <span className="block whitespace-nowrap font-mono text-[9px] xl:text-[10px] uppercase leading-3.5 tracking-[0.02em] xl:tracking-[0.06em] text-muted">
                     {slide.product.colorwayName}
                   </span>
                 </span>
@@ -125,19 +128,25 @@ export function HeroThumbRail({
               {active ? (
                 <motion.span
                   layoutId="hero-thumb-indicator"
-                  className={cn("absolute inset-x-0 block h-[2px] bg-aqua", compact ? "bottom-0" : "bottom-[calc(2rem-2px)]")}
+                  className={cn(
+                    "absolute inset-x-0 block h-[2px] bg-red/25",
+                    compact ? "bottom-0" : "bottom-[2.1rem]",
+                  )}
                   transition={{ type: "spring", ...spring.soft }}
                 >
                   <motion.span
                     aria-hidden="true"
-                    className="block h-full w-full origin-left bg-aqua"
+                    className="block h-full w-full origin-left bg-red"
                     style={{ scaleX: progress }}
                   />
                 </motion.span>
               ) : (
                 <span
                   aria-hidden="true"
-                  className={cn("absolute inset-x-0 block h-[2px] bg-hairline", compact ? "bottom-0" : "bottom-[calc(2rem-2px)]")}
+                  className={cn(
+                    "absolute inset-x-0 block h-[2px] bg-hairline",
+                    compact ? "bottom-0" : "bottom-[2.1rem]",
+                  )}
                 />
               )}
             </button>
@@ -146,8 +155,9 @@ export function HeroThumbRail({
       </div>
       {compact ? (
         <p
+          data-thumb-active-name
           aria-hidden="true"
-          className="mt-2 whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.14em] text-mist"
+          className="mt-1.5 whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.12em] text-ink-2"
         >
           {slides[activeIndex]?.product.name} · {slides[activeIndex]?.product.colorwayName}
         </p>

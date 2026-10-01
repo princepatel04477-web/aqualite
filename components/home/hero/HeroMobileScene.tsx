@@ -3,19 +3,15 @@
 import { useEffect, useMemo, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
-import { HeroCarouselPagination } from "@/components/home/hero/HeroCarouselPagination";
 import { HeroCounter } from "@/components/home/hero/HeroCounter";
 import { HeroPriceBlock } from "@/components/home/hero/HeroPriceBlock";
+import { HeroThumbRail } from "@/components/home/hero/HeroThumbRail";
 import { Button } from "@/components/ui/Button";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { heroImage, preloadHeroImage } from "@/lib/catalog/hero-image";
 import type { HeroSlide } from "@/lib/commerce/types";
 import { duration, ease, hero } from "@/lib/motion/tokens";
 import { useMotionPolicy } from "@/lib/motion/use-motion-policy";
-
-function pad(index: number): string {
-  return String(index + 1).padStart(2, "0");
-}
 
 /** The mobile lead is the first sentence only (H06). */
 function firstSentenceOf(lead: string): string {
@@ -26,12 +22,6 @@ function firstSentenceOf(lead: string): string {
 const SWIPE_INTENT_PX = 16;
 const SWIPE_COMMIT_RATIO = 0.25;
 
-/**
- * H06 motion tier (Motion only — no wave wipe, no filters, no GSAP):
- * copy slides out at x−24 / fades over 0.25s and in from x+24 over 0.35s;
- * the shoe image rises 12px into place, then floats at half Buoyancy amp;
- * the glow morphs purely in CSS via the --hero-glow custom property.
- */
 const sceneVariants = (reduced: boolean) => ({
   enter: {
     x: hero.mobile.outX,
@@ -57,11 +47,11 @@ const riseVariants = (reduced: boolean) => ({
 });
 
 /**
- * The <1024px showcase (H06): a single stacked scene — eyebrow + counter,
- * the 4:5 mobile image over the morphing glow, headline, price line, first
- * sentence and side-by-side 48px CTAs — with horizontal swipe (16px intent,
- * 25% commit) and a below-fold snap row of 56px thumbs. Only slide 1's
- * image is eager.
+ * The <1024px showcase (H06 / R03):
+ * - Text-only eyebrow ("MONSOON '26") + single counter ("04 / 05 · Pause")
+ * - Transparent shoe cutout on ivory with CSS halo + contact shadow, strictly
+ *   above headline, price line, lead (--ink-2) and CTAs
+ * - Single thumbnail rail navigation at bottom
  */
 export function HeroMobileScene({
   slides,
@@ -93,7 +83,6 @@ export function HeroMobileScene({
   const scene = sceneVariants(reduced);
   const rise = riseVariants(reduced);
 
-  // Warm the next mobile image once the scene has settled (idle preload).
   useEffect(() => {
     const next = slides[(activeIndex + 1) % slides.length];
     if (!next || isTransitioning) return;
@@ -106,7 +95,7 @@ export function HeroMobileScene({
 
   if (!active) return null;
   const spec = heroImage(active.imageDesktopPath, active.imageMobilePath, "mobile");
-  const sizes = "(max-width: 1023px) 70vw, 420px";
+  const sizes = "(max-width: 1023px) 78vw, 420px";
 
   const onDragEnd = (_: unknown, info: { offset: { x: number } }): void => {
     const offset = info.offset.x;
@@ -121,20 +110,8 @@ export function HeroMobileScene({
   return (
     <div
       data-hero-mobile
-      className="page-wrap relative z-[2] flex h-full flex-col pb-8 pt-[calc(var(--header-h)+1.25rem)]"
+      className="page-wrap relative z-[2] flex h-full flex-col justify-between pb-6 pt-[calc(var(--header-h)+1rem)]"
     >
-      {/* Persistent glow layer — its custom property morphs in CSS (0.4s). */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-[calc(var(--header-h)+3.5rem)] h-[min(92vw,560px)]"
-      >
-        <div
-          data-hero-glow
-          className="hero-scene-glow h-full w-full opacity-90"
-          style={{ ["--hero-glow" as string]: active.glowHex }}
-        />
-      </div>
-
       <motion.div
         ref={dragRef}
         drag="x"
@@ -144,7 +121,7 @@ export function HeroMobileScene({
         onDragEnd={onDragEnd}
         className="relative flex touch-pan-y flex-1 select-none flex-col"
       >
-        {/* Row 1: eyebrow (swaps with the scene) + 02 — 05 + pause. */}
+        {/* Row 1: text-only eyebrow ("MONSOON '26") + 04 / 05 · Pause */}
         <div className="flex items-center justify-between gap-4">
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.div
@@ -154,8 +131,8 @@ export function HeroMobileScene({
               exit={{ x: -hero.mobile.outX, opacity: 0 }}
               transition={{ duration: reduced ? 0 : duration.quick, ease: ease.tide }}
             >
-              <Eyebrow index={pad(activeIndex)} total="06">
-                {active.eyebrow}
+              <Eyebrow className="text-ink-2">
+                <span data-hero-eyebrow-text>{active.eyebrow}</span>
               </Eyebrow>
             </motion.div>
           </AnimatePresence>
@@ -168,8 +145,21 @@ export function HeroMobileScene({
           />
         </div>
 
-        {/* The 4:5 mobile image rises 12px into place, then floats at half amp. */}
-        <div className="relative mt-4">
+        {/* Row 2: Dedicated shoe stage on ivory with CSS halo + contact shadow */}
+        <div
+          data-hero-shoe={activeIndex}
+          style={{ ["--hero-glow" as string]: active.glowHex }}
+          className="relative my-3 h-[210px] w-full shrink-0"
+        >
+          <div
+            data-hero-glow
+            aria-hidden="true"
+            className="hero-scene-glow pointer-events-none absolute -inset-4 z-0"
+          />
+          <div
+            aria-hidden="true"
+            className="hero-contact-shadow pointer-events-none absolute inset-x-[12%] bottom-1 z-0 h-10"
+          />
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.div
               key={active.id}
@@ -177,18 +167,19 @@ export function HeroMobileScene({
               initial="enter"
               animate="center"
               exit="exit"
-              className="relative mx-auto w-[min(70vw,420px)]"
+              className="relative z-[1] mx-auto flex h-full w-[min(82vw,340px)] items-center justify-center"
               onAnimationComplete={() => onComplete(activeIndex)}
             >
               <motion.div
-                animate={reduced ? undefined : { y: [0, hero.mobile.floatAmp] }}
+                className="flex h-full w-full items-center justify-center"
+                animate={reduced ? undefined : { y: [0, 5] }}
                 transition={
                   reduced
                     ? undefined
                     : { duration: hero.mobile.floatDuration, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }
                 }
               >
-                <picture>
+                <picture className="flex h-full w-full items-center justify-center">
                   {spec.avifSrcSet ? <source type="image/avif" srcSet={spec.avifSrcSet} sizes={sizes} /> : null}
                   {spec.webpSrcSet ? <source type="image/webp" srcSet={spec.webpSrcSet} sizes={sizes} /> : null}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -196,11 +187,11 @@ export function HeroMobileScene({
                     src={spec.fallback ?? active.imageMobilePath}
                     alt={active.imageAlt}
                     width={840}
-                    height={1050}
+                    height={740}
                     fetchPriority={activeIndex === 0 ? "high" : undefined}
                     loading={activeIndex === 0 ? undefined : "eager"}
                     decoding="async"
-                    className="stage aspect-[4/5] w-full object-cover"
+                    className="hero-shoe max-h-full max-w-[90%] object-contain"
                   />
                 </picture>
               </motion.div>
@@ -208,7 +199,7 @@ export function HeroMobileScene({
           </AnimatePresence>
         </div>
 
-        {/* Copy group: out x−24 fade .25s, in x+24 fade .35s (Motion only). */}
+        {/* Row 3: Copy group strictly below the shoe stage */}
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             key={active.id}
@@ -216,20 +207,34 @@ export function HeroMobileScene({
             initial="enter"
             animate="center"
             exit="exit"
-            className="relative mt-5"
+            data-hero-content={activeIndex}
+            className="relative mt-2"
             onAnimationComplete={() => onComplete(activeIndex)}
           >
-            <h2 className="heading-display font-display text-display font-normal text-foam">
+            <h2
+              data-hero-headline
+              className="heading-display max-w-[11ch] font-display text-[clamp(2.25rem,8.5vw,3.1rem)] font-normal leading-[0.95] text-ink"
+            >
               {active.headline.before} <em>{active.headline.italic}</em>
               {active.headline.after}
             </h2>
             <HeroPriceBlock slide={active} variant="line" />
-            <p className="mt-3 max-w-[38ch] text-lead text-mist">{firstSentence}</p>
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <Button href={active.ctaPrimary.href} variant="primary" className="w-full justify-center">
+            <p data-hero-lead className="mt-2.5 max-w-[38ch] text-body leading-relaxed text-ink-2">
+              {firstSentence}
+            </p>
+            <div data-hero-ctas className="mt-4 grid grid-cols-2 gap-3">
+              <Button
+                href={active.ctaPrimary.href}
+                variant="primary"
+                className="w-full justify-center whitespace-nowrap px-3"
+              >
                 {active.ctaPrimary.label}
               </Button>
-              <Button href={active.ctaSecondary.href} variant="outline" className="w-full justify-center">
+              <Button
+                href={active.ctaSecondary.href}
+                variant="outline"
+                className="w-full justify-center whitespace-nowrap px-3"
+              >
                 {active.ctaSecondary.label}
               </Button>
             </div>
@@ -237,15 +242,13 @@ export function HeroMobileScene({
         </AnimatePresence>
       </motion.div>
 
-      {/* Carousel navigation controls + indicators */}
-      <div className="relative mt-6 border-t border-hairline pt-4 flex justify-center">
-        <HeroCarouselPagination
+      {/* Row 4: Single navigation system (5 porcelain thumbs + active red progress line) */}
+      <div className="relative mt-5 border-t border-hairline pt-3">
+        <HeroThumbRail
           compact
           slides={slides}
           activeIndex={activeIndex}
           onSelect={onSelect}
-          onPrev={onPrev}
-          onNext={onNext}
           onProgress={onProgress}
         />
       </div>
