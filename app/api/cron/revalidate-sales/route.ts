@@ -20,3 +20,5 @@ export async function POST(request: Request) {
   if (saveError) return NextResponse.json({ message: "Could not mark queue entries processed" }, { status: 503 });
   return NextResponse.json({ processed: data.length });
 }
+
+export const GET = POST;

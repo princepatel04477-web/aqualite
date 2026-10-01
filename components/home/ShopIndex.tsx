@@ -22,6 +22,7 @@ export function ShopIndex({ rows }: { rows: IndexRow[] }) {
   const root = useRef<HTMLElement>(null);
   const { reduced } = useMotionPolicy();
   const [active, setActive] = useState<number | null>(null);
+  const visibleRows = rows.filter((row) => row.count > 0);
 
   useGSAP(
     () => {
@@ -52,7 +53,7 @@ export function ShopIndex({ rows }: { rows: IndexRow[] }) {
           Shop by
         </Eyebrow>
       </div>
-      {rows.map((row, index) => (
+      {visibleRows.map((row, index) => (
         <Link
           key={row.href}
           href={row.href}

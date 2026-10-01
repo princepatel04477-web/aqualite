@@ -16,7 +16,7 @@ const NAV: { href: string; label: string; match: RegExp }[] = [
   { href: "/seller/performance/health", label: "Account health", match: /^\/seller\/performance\/health/ },
   { href: "/seller/performance/reviews", label: "Reviews", match: /^\/seller\/performance\/reviews/ },
   { href: "/seller/performance/messages", label: "Messages", match: /^\/seller\/performance\/messages/ },
-  { href: "/admin/orders", label: "Orders", match: /^\/admin\/orders/ },
+  { href: "/seller/orders", label: "Orders", match: /^\/seller\/orders/ },
   { href: "/admin/inventory", label: "Inventory", match: /^\/admin\/inventory/ },
 ];
 

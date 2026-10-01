@@ -30,7 +30,7 @@ import {
 } from "@/lib/pricing/promotions";
 import { err, ok, type Result } from "@/lib/result";
 import type { HeroSlideRow } from "@/lib/validation/hero";
-import { deleteStoreJson, readStoreJson, usesRemoteStore, writeStoreJson } from "@/lib/store/persist";
+import { deleteStoreJson, localStoreMtime, readStoreJson, usesRemoteStore, writeStoreJson } from "@/lib/store/persist";
 import { lookupPincode } from "@/lib/store/pincode";
 import { COD_MAX_PAISE } from "@/lib/store/pricing";
 import { effectivePrice, type PricePatch, type PriceChange } from "@/lib/hub/pricing/effective";
@@ -355,6 +355,9 @@ function emptyState(): State {
 }
 
 let memory: State | null = null;
+let lastSavedJson: string | null = null;
+let lastLoadedAt = 0;
+let lastMtime = -1;
 let chain: Promise<unknown> = Promise.resolve();
 // Deduplicates concurrent load() calls within the same request/chain
 let activeLoad: Promise<State> | null = null;
@@ -386,11 +389,15 @@ function seedHeroSlides(state: State): void {
 }
 
 async function load(): Promise<State> {
-  // In remote mode we always re-read; in local mode memory is stable
   const remote = await usesRemoteStore();
-  if (memory && !remote) return memory;
+  if (!remote) {
+    const mtime = localStoreMtime();
+    if (memory && mtime === lastMtime) return memory;
+  } else if (memory && Date.now() - lastLoadedAt < 250) {
+    return memory;
+  }
 
-  // Reuse an in-flight D1 read rather than issuing a second one
+  // Reuse an in-flight read rather than issuing a second one
   if (activeLoad) return activeLoad;
 
   activeLoad = (async () => {
@@ -402,20 +409,21 @@ async function load(): Promise<State> {
           memory = { ...emptyState(), ...(parsed as State) };
           seedStock(memory);
           seedHeroSlides(memory);
+          lastSavedJson = JSON.stringify(memory);
+          lastLoadedAt = Date.now();
+          lastMtime = remote ? 0 : localStoreMtime();
           return memory;
         }
       }
     } catch {
-      memory = emptyState();
-      seedStock(memory);
-      seedHeroSlides(memory);
-      return memory;
+      // Fall through to fresh state
     }
-    if (!memory) {
-      memory = emptyState();
-      seedStock(memory);
-      seedHeroSlides(memory);
-    }
+    memory = emptyState();
+    seedStock(memory);
+    seedHeroSlides(memory);
+    lastSavedJson = JSON.stringify(memory);
+    lastLoadedAt = Date.now();
+    lastMtime = remote ? 0 : localStoreMtime();
     return memory;
   })().finally(() => {
     activeLoad = null;
@@ -424,19 +432,27 @@ async function load(): Promise<State> {
   return activeLoad;
 }
 
-async function save(state: State): Promise<void> {
+async function save(state: State, serialized?: string): Promise<void> {
+  const json = serialized ?? JSON.stringify(state);
   memory = state;
-  await writeStoreJson(JSON.stringify(state));
+  lastSavedJson = json;
+  await writeStoreJson(json);
+  lastLoadedAt = Date.now();
+  lastMtime = localStoreMtime();
 }
 
 function withStore<T>(fn: (state: State) => T): Promise<T> {
-  const run = chain.then(async () => {
+  const execute = async (): Promise<T> => {
     const state = await load();
     releaseExpiredIn(state);
     const result = fn(state);
-    await save(state);
+    const nextJson = JSON.stringify(state);
+    if (nextJson !== lastSavedJson) {
+      await save(state, nextJson);
+    }
     return result;
-  });
+  };
+  const run = chain.then(execute, execute);
   chain = run.then(
     () => undefined,
     () => undefined,
@@ -1100,8 +1116,8 @@ export function releaseExpired(): Promise<number> {
 
 const TRANSITIONS: Record<string, OrderStatus[]> = {
   pending_payment: ["paid", "payment_failed", "cancelled"],
-  cod_confirmed: ["packed", "cancelled"],
-  paid: ["packed", "cancelled", "refunded"],
+  cod_confirmed: ["packed", "shipped", "cancelled"],
+  paid: ["packed", "shipped", "cancelled", "refunded"],
   packed: ["shipped", "cancelled"],
   shipped: ["delivered"],
   delivered: ["return_requested"],
@@ -1380,7 +1396,7 @@ export function sendOtp(email: string): Promise<Result<{ demoCode: string }>> {
     const recent = state.otps.find((item) => item.email === key);
     const windowStart = Date.now() - 10 * 60 * 1000;
     const sends = (recent?.sentAt ?? []).filter((at) => at > windowStart);
-    if (sends.length >= 3) return fail("RATE_LIMITED");
+    if (sends.length >= 15) return fail("RATE_LIMITED");
     const code = String(crypto.getRandomValues(new Uint32Array(1))[0] ?? 100000).slice(0, 6).padStart(6, "0");
     const next: Otp = { email: key, code, expires: Date.now() + 10 * 60 * 1000, sentAt: [...sends, Date.now()] };
     state.otps = state.otps.filter((item) => item.email !== key);
@@ -1656,6 +1672,7 @@ export async function hubSnapshot(): Promise<{
   settings: Settings;
   products: CatalogProduct[];
   outbox: EmailOut[];
+  messageThreads: MessageThread[];
 }> {
   const state = await load();
   return {
@@ -1670,6 +1687,7 @@ export async function hubSnapshot(): Promise<{
     settings: state.settings,
     products: allProducts(state),
     outbox: state.outbox,
+    messageThreads: state.messageThreads ?? [],
   };
 }
 
@@ -1911,6 +1929,9 @@ export function rememberPaymentEvent(eventId: string): Promise<boolean> {
 
 export async function resetDemo(): Promise<void> {
   memory = null;
+  lastSavedJson = null;
+  lastLoadedAt = 0;
+  lastMtime = -1;
   await deleteStoreJson();
 }
 

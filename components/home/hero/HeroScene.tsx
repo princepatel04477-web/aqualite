@@ -7,13 +7,11 @@ import { cn } from "@/lib/cn";
 import { HeroCtas, type HeroCtaPair } from "@/components/home/hero/HeroCtas";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 
-function pad(index: number): string {
-  return String(index + 1).padStart(2, "0");
-}
-
 /**
- * Decorative scene layer: per-slide glow (CSS variable from data), vignette
- * and the floating shoe. Lives in the absolute stacking frame behind content.
+ * Decorative scene layer (R03 Defect 1, 2, 9):
+ * Lives in the upper-right shoe stage (cols 7–12 above Lead + CTAs).
+ * Renders the faint tinted halo (10–14% opacity of --hero-glow) and soft
+ * contact shadow in CSS behind the transparent shoe cutout.
  */
 export function HeroSceneBackdrop({
   slide,
@@ -28,9 +26,8 @@ export function HeroSceneBackdrop({
   shouldLoadImage: boolean;
   priority: boolean;
 }) {
-  const spec = priority ? null : heroImage(slide.imageDesktopPath, slide.imageMobilePath, "desktop");
-  // Slide 1 keeps the exact approved markup (and LCP element): plain <img>, priority.
-  const imageWidth = spec?.aspect ? Math.round(spec.aspect * 1000) : 1400;
+  const spec = heroImage(slide.imageDesktopPath, slide.imageMobilePath, "desktop");
+  const imageWidth = spec.aspect ? Math.round(spec.aspect * 1000) : 1400;
 
   return (
     <div
@@ -42,24 +39,14 @@ export function HeroSceneBackdrop({
         active ? "opacity-100" : "opacity-0 invisible",
       )}
     >
-      <div className="hero-scene-glow absolute inset-0" />
-      <div className="hero-vignette absolute inset-0" />
-      <div className="absolute inset-x-0 top-[4%] flex justify-center lg:top-[0%]">
-        <div data-float className="w-[min(128vw,1180px)]">
-          <div data-parallax className="w-full">
-            <div data-shoe>
-              {priority ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src="/catalog/hero-tide-slide.jpg"
-                  alt={slide.imageAlt}
-                  width={1400}
-                  height={1000}
-                  fetchPriority="high"
-                  className="hero-shoe w-full"
-                />
-              ) : shouldLoadImage && spec?.fallback ? (
-                <picture>
+      <div className="hero-scene-glow pointer-events-none absolute -inset-8 z-0" />
+      <div className="hero-contact-shadow pointer-events-none absolute inset-x-[12%] bottom-2 z-0 h-16" />
+      <div className="relative z-[1] flex h-full w-full items-center justify-center">
+        <div data-float className="flex h-full w-full items-center justify-center">
+          <div data-parallax className="flex h-full w-full items-center justify-center">
+            <div data-shoe className="flex h-full w-full items-center justify-center">
+              {(priority || shouldLoadImage) && spec.fallback ? (
+                <picture className="flex h-full w-full items-center justify-center">
                   {spec.avifSrcSet ? <source type="image/avif" srcSet={spec.avifSrcSet} sizes={spec.sizes} /> : null}
                   {spec.webpSrcSet ? <source type="image/webp" srcSet={spec.webpSrcSet} sizes={spec.sizes} /> : null}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -69,16 +56,15 @@ export function HeroSceneBackdrop({
                     width={imageWidth}
                     height={1000}
                     loading="eager"
-                    decoding="async"
-                    fetchPriority="low"
-                    className="hero-shoe w-full"
+                    decoding={priority ? "sync" : "async"}
+                    fetchPriority={priority ? "high" : "low"}
+                    className="hero-shoe max-h-full max-w-[90%] object-contain"
                   />
                 </picture>
               ) : (
                 <div
                   data-hero-placeholder
-                  className="hero-shoe aspect-[1400/1000] w-full bg-cover bg-center opacity-0"
-                  style={{ backgroundImage: `url(${slide.imageDesktopPath})` }}
+                  className="hero-shoe h-full w-full opacity-0"
                 />
               )}
             </div>
@@ -90,10 +76,12 @@ export function HeroSceneBackdrop({
 }
 
 /**
- * Content scene layer: eyebrow + headline in the left 8 columns, lead + CTAs
- * in the right 4 — the approved hero's exact grid, stacked per scene in one
- * grid cell so switching never changes height (CLS 0). Inactive scenes are
- * made inert + aria-hidden by the showcase and carry the APG slide role.
+ * Content scene layer (R03 Defect 2, 3, 6):
+ * - Left column (cols 1–6): text-only Eyebrow ("MONSOON '26") + Headline
+ *   (max-width 11ch, clamped font size so no glyph ever reaches col 7).
+ * - Right column (cols 7–12): dedicated top spacer for the shoe stage, with
+ *   Lead (--ink-2, >= 4.5:1 contrast) + two CTAs strictly BELOW the shoe's
+ *   bounding box.
  */
 export function HeroSceneContent({
   slide,
@@ -115,24 +103,27 @@ export function HeroSceneContent({
       aria-roledescription="slide"
       aria-label={`${index + 1} of ${count}: ${slide.product.name}`}
       className={cn(
-        "col-start-1 row-start-1 grid items-end gap-8 lg:grid-cols-12",
+        "col-start-1 row-start-1 grid items-end gap-x-8 lg:grid-cols-12",
         "transition-opacity duration-base ease-surface",
         active ? "opacity-100" : "opacity-0 invisible",
       )}
     >
-      <div className="lg:col-span-8">
+      <div className="lg:col-span-6 lg:pr-4">
         <div data-meta>
-          <Eyebrow index={pad(index)} total="06">
+          <Eyebrow className="text-ink-2">
             <span data-hero-eyebrow-text>{slide.eyebrow}</span>
           </Eyebrow>
         </div>
-        <h2 data-hero-headline className="heading-display mt-4 font-display text-display font-normal text-foam">
-          <span className="block overflow-hidden">
+        <h2
+          data-hero-headline
+          className="heading-display mt-3 max-w-[11ch] font-display text-[clamp(2.75rem,4.5vw,5.15rem)] font-normal leading-[0.94] tracking-[-0.02em] text-ink"
+        >
+          <span className="block overflow-hidden pb-1">
             <span data-line className="block">
               {slide.headline.before}
             </span>
           </span>
-          <span className="block overflow-hidden">
+          <span className="block overflow-hidden pb-1">
             <span data-line className="block">
               <em>{slide.headline.italic}</em>
               {slide.headline.after}
@@ -140,8 +131,13 @@ export function HeroSceneContent({
           </span>
         </h2>
       </div>
-      <div data-meta className="lg:col-span-4 lg:pb-2">
-        <p data-hero-lead className="max-w-[34ch] text-lead text-mist xl:max-w-measure">
+      <div data-meta className="lg:col-span-6 flex flex-col justify-end lg:pl-4">
+        {/* Reserves the upper-right zone (cols 7–12) for the floating shoe so Lead + CTAs sit strictly below */}
+        <div className="pointer-events-none h-[clamp(195px,32vh,295px)] w-full shrink-0" aria-hidden="true" />
+        <p
+          data-hero-lead
+          className="mt-4 max-w-[38ch] text-[clamp(0.95rem,1.1vw,1.125rem)] leading-[1.45] text-ink-2"
+        >
           {slide.lead}
         </p>
         <HeroCtas

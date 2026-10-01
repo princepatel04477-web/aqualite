@@ -6,7 +6,7 @@ export const footerColumns = [
     links: [
       { href: "/shop/men", label: "Men" },
       { href: "/shop/women", label: "Women" },
-      { href: "/shop/kids", label: "Kids" },
+      { href: "/collections/everyday-slides", label: "Slides" },
       { href: "/collections/new-season", label: "New season" },
       { href: "/collections/monsoon-ready", label: "Monsoon ready" },
     ],

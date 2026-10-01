@@ -3,13 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BuyBox } from "@/components/pdp/BuyBox";
-import { FrameIn } from "@/components/pdp/FrameIn";
+import { ProductGallery } from "@/components/pdp/ProductGallery";
 import { ProductCard } from "@/components/product/ProductCard";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { Heading } from "@/components/ui/Heading";
 import { Tag } from "@/components/ui/Tag";
 import { products } from "@/content/catalog";
 import { getProduct } from "@/lib/catalog/queries";
+import { effectivePrice } from "@/lib/hub/pricing/effective";
 import { formatINR } from "@/lib/money";
 
 export const dynamic = "force-dynamic";
@@ -22,10 +23,22 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const data = await getProduct(slug);
   if (!data) return { title: "Product" };
+  const primaryImage = data.product.colorways[0]?.images[0]?.src;
   return {
     title: data.product.seoTitle || data.product.name,
     description: data.product.seoDescription || data.product.subtitle,
+    openGraph: {
+      title: data.product.seoTitle || data.product.name,
+      description: data.product.seoDescription || data.product.subtitle,
+      images: primaryImage ? [{ url: primaryImage }] : undefined,
+    },
   };
+}
+
+function fitLabel(fit: "runs_small" | "true" | "runs_large"): string {
+  if (fit === "runs_small") return "Runs small";
+  if (fit === "runs_large") return "Runs large";
+  return "True to size";
 }
 
 export default async function ProductPage({
@@ -46,31 +59,51 @@ export default async function ProductPage({
     data.product.colorways.find((item) => item.variants.some((variant) => (data.stock[variant.id] ?? 0) > 0)) ??
     data.product.colorways[0];
   if (!colorway) notFound();
-  const primary = colorway.images[0];
+
+  const firstVariant = colorway.variants[0];
+  const priceInr = firstVariant ? (effectivePrice(firstVariant) / 100).toFixed(2) : "0.00";
+  const inStock = colorway.variants.some((v) => (data.stock[v.id] ?? 0) > 0);
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: data.product.name,
+    description: data.product.description,
+    image: colorway.images.map((img) => img.src),
+    sku: firstVariant?.sku ?? data.product.slug,
+    brand: {
+      "@type": "Brand",
+      name: "Aqualite",
+    },
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "INR",
+      price: priceInr,
+      availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      url: `/product/${data.product.slug}?color=${colorway.slug}`,
+    },
+    ...(data.reviewSummary.count > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: Number(data.reviewSummary.avg.toFixed(1)),
+            reviewCount: data.reviewSummary.count,
+          },
+        }
+      : {}),
+  };
 
   return (
-    <div className="page-wrap py-8 lg:py-12">
+    <div className="page-wrap py-8 pb-28 lg:py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <p className="font-mono text-eyebrow uppercase text-mist">
         <Link href="/shop">Shop</Link> / <Link href={`/shop/${data.product.gender}`}>{data.product.gender}</Link> / {data.product.name}
       </p>
       <div className="mt-6 grid gap-10 lg:grid-cols-12">
         <div className="lg:col-span-7">
-          <FrameIn className="stage aspect-[4/5] overflow-hidden">
-            {primary ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={primary.src} alt={primary.alt} className="h-full w-full object-cover" />
-            ) : null}
-          </FrameIn>
-          {colorway.images.length > 1 ? (
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              {colorway.images.slice(1).map((image) => (
-                <div key={image.src} className="stage aspect-[4/5] overflow-hidden bg-abyss">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={image.src} alt={image.alt} className="h-full w-full object-cover" />
-                </div>
-              ))}
-            </div>
-          ) : null}
+          <ProductGallery images={colorway.images} productName={`${data.product.name} — ${colorway.name}`} />
         </div>
         <div className="lg:col-span-5 lg:sticky lg:top-28 lg:self-start">
           <div className="flex gap-3">
@@ -88,7 +121,14 @@ export default async function ProductPage({
             </p>
           ) : null}
           <div className="mt-8">
-            <BuyBox product={data.product} color={colorway.slug} size={sizeParam} stock={data.stock} promoLabel={data.promoLabel} clockAt={new Date().toISOString()} />
+            <BuyBox
+              product={data.product}
+              color={colorway.slug}
+              size={sizeParam}
+              stock={data.stock}
+              promoLabel={data.promoLabel}
+              clockAt={new Date().toISOString()}
+            />
           </div>
           <div className="mt-10 divide-y divide-hairline border-y border-hairline">
             <details className="py-4" open>
@@ -123,18 +163,28 @@ export default async function ProductPage({
       </div>
       <section className="mt-section">
         <Eyebrow>Reviews</Eyebrow>
-        <Heading level={2} className="mt-3">
-          Worn, then <em>written</em>.
-        </Heading>
+        <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
+          <Heading level={2}>
+            Worn, then <em>written</em>.
+          </Heading>
+          {data.reviewSummary.count > 0 ? (
+            <p className="font-mono text-eyebrow uppercase text-mist">
+              {data.reviewSummary.avg.toFixed(1)} / 5 · {data.reviewSummary.count} verified & guest reviews
+            </p>
+          ) : null}
+        </div>
         <ul className="mt-8 divide-y divide-hairline">
           {data.reviews.map((review) => (
             <li key={review.id} className="py-6">
-              <p className="font-mono text-size text-aqua">{"●".repeat(review.rating)}{"○".repeat(5 - review.rating)}</p>
+              <p className="font-mono text-size text-aqua">
+                {"●".repeat(review.rating)}
+                {"○".repeat(5 - review.rating)}
+              </p>
               <p className="mt-2 font-body font-medium">{review.title}</p>
               <p className="measure mt-1 text-small text-mist">{review.body}</p>
               <p className="mt-2 font-mono text-eyebrow uppercase text-mist">
                 {review.userName}
-                {review.verified ? " · Verified purchase" : ""} · {review.fit.replace("_", " ")}
+                {review.verified ? " · Verified purchase" : ""} · {fitLabel(review.fit)}
               </p>
             </li>
           ))}

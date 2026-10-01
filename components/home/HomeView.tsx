@@ -71,7 +71,7 @@ export function HomeView({
           { href: "/shop/women", label: "Women", count: counts.women, note: "Slides, clogs, trainers", image: "/catalog/pearl-slide-blush.jpg" },
           { href: "/shop/kids", label: "Kids", count: counts.kids, note: "Still being photographed", image: null },
           { href: "/collections/everyday-slides", label: "Slides", count: counts.slides, note: "The door pair", image: "/catalog/tide-slide-sand.jpg" },
-        ]}
+        ].filter((row) => row.count > 0)}
       />
 
       <section className="py-section">

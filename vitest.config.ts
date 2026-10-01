@@ -6,7 +6,11 @@ import { defineConfig } from "vitest/config";
 process.env.AQUALITE_DATA_PATH = path.resolve(__dirname, ".data/test");
 
 export default defineConfig({
-  test: { environment: "node", setupFiles: ["./tests/setup-env.ts"] },
+  test: {
+    environment: "node",
+    setupFiles: ["./tests/setup-env.ts"],
+    include: ["tests/unit/**/*.test.ts"],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "."),

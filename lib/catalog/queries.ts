@@ -6,6 +6,24 @@ import type { ProductCardModel } from "@/lib/commerce/types";
 import { effectivePrice } from "@/lib/hub/pricing/effective";
 import { availabilityMap, catalogProducts, productPromoLabels, reviewsFor, stockOf } from "@/lib/store/engine";
 
+const QUERY_TIMEOUT_MS = 5000;
+
+function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Catalog query "${label}" timed out after ${QUERY_TIMEOUT_MS}ms`)), QUERY_TIMEOUT_MS);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 function cardFrom(
   product: CatalogProduct,
   colorwaySlug: string,
@@ -72,9 +90,11 @@ async function stockFor(list: CatalogProduct[]): Promise<Record<string, number>>
 }
 
 export async function allCards(): Promise<ProductCardModel[]> {
-  const list = await catalogProducts();
-  const stock = await stockFor(list);
-  const promoLabels = await productPromoLabels();
+  const list = await withTimeout(catalogProducts(), "catalogProducts");
+  const [stock, promoLabels] = await Promise.all([
+    withTimeout(stockFor(list), "stockFor"),
+    withTimeout(productPromoLabels(), "productPromoLabels"),
+  ]);
   return list.filter((product) => product.isActive).flatMap((product) =>
     product.colorways.flatMap((colorway) => {
       const card = cardFrom(product, colorway.slug, stock, promoLabels[product.id]);
@@ -98,28 +118,41 @@ export async function listProducts(params: ListingParams) {
 
 export async function getNavigation() {
   const cards = await allCards();
-  return (["men", "women", "kids"] as const).map((gender) => ({
-    gender,
-    categories: CATEGORIES.map((category) => ({
-      ...category,
-      count: cards.filter((card) => card.gender === gender && card.categorySlug === category.slug).length,
-    })).filter((category) => category.count > 0),
-  }));
+  return (["men", "women", "kids"] as const)
+    .map((gender) => ({
+      gender,
+      categories: CATEGORIES.map((category) => ({
+        ...category,
+        count: cards.filter((card) => card.gender === gender && card.categorySlug === category.slug).length,
+      })).filter((category) => category.count > 0),
+    }))
+    .filter((group) => group.categories.length > 0);
 }
 
 export async function getProduct(slug: string) {
-  const list = await catalogProducts();
+  const list = await withTimeout(catalogProducts(), "catalogProducts");
   const found = list.find((item) => item.slug === slug && item.isActive);
   if (!found) return null;
-  const product = { ...found, colorways: found.colorways.filter((row) => row.images.some((image) => image.role === "primary" && image.src) && row.images.every((image) => image.alt.trim()) && row.variants.length > 0 && row.variants.every((variant) => variant.pricePaise > 0)) };
+  const product = {
+    ...found,
+    colorways: found.colorways.filter(
+      (row) =>
+        row.images.some((image) => image.role === "primary" && image.src) &&
+        row.images.every((image) => image.alt.trim()) &&
+        row.variants.length > 0 &&
+        row.variants.every((variant) => variant.pricePaise > 0),
+    ),
+  };
   if (!product.colorways.length) return null;
-  const stock = await stockFor([product]);
-  const cards = await allCards();
+  const [stock, cards, reviews, promoLabels] = await Promise.all([
+    withTimeout(stockFor([product]), "stockFor"),
+    allCards(),
+    withTimeout(reviewsFor(product.id), "reviewsFor"),
+    withTimeout(productPromoLabels(), "productPromoLabels"),
+  ]);
   const related = cards
     .filter((card) => card.productId !== product.id && (card.categorySlug === product.category || card.gender === product.gender))
     .slice(0, 8);
-  const reviews = await reviewsFor(product.id);
-  const promoLabels = await productPromoLabels();
   const avg = reviews.length ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : 0;
   const fit = {
     runs_small: reviews.filter((review) => review.fit === "runs_small").length,
@@ -166,7 +199,7 @@ export async function getCollection(slug: string) {
 }
 
 export async function freshAvailability(variantId: string) {
-  return stockOf(variantId);
+  return withTimeout(stockOf(variantId), "stockOf");
 }
 
 export { CATEGORIES, collections };

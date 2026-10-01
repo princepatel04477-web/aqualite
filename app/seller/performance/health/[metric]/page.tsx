@@ -97,7 +97,7 @@ export default async function HealthMetricPage({
                 drilled.map((order) => (
                   <tr key={order.id} className="border-b border-hairline last:border-0 hover:bg-linen/50">
                     <td className="px-4 py-2.5">
-                      <Link href={`/admin/orders/${order.number}`} className="font-mono text-hub-id text-red-ink">
+                      <Link href={`/seller/orders/${order.number}`} className="font-mono text-hub-id text-red-ink">
                         {order.number}
                       </Link>
                     </td>

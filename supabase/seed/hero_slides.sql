@@ -29,10 +29,10 @@ from (values
     '#1E7F78',
     '/catalog/hero-tide-slide.jpg',
     '/catalog/hero/tide-slide/hero-mobile',
-    'Aqualite Tide Slide in midnight with an aqua strap, floating over dark still water',
+    'Aqualite Tide Slide in midnight with an aqua accent on a warm ivory stage',
     0.580, 0.420, null::text,
-    'Shop men', '/shop/men',
-    'Shop women', '/shop/women',
+    'Shop Tide', '/product/tide-slide?color=midnight',
+    'All slides', '/collections/everyday-slides',
     null::timestamptz, null::timestamptz
   ),
   (
@@ -101,10 +101,10 @@ from (values
     '#BFA77E',
     '/catalog/hero/reef-flip/hero-desktop',
     '/catalog/hero/reef-flip/hero-mobile',
-    'Aqualite Reef Flip in porcelain white, floating over dark still water',
+    'Aqualite Reef Flip in porcelain white on a warm ivory stage',
     0.500, 0.450, null::text,
     'Shop Reef', '/product/reef-flip?color=porcelain',
-    'Shop women', '/shop/women',
+    'Shop men', '/shop/men',
     null::timestamptz, null::timestamptz
   )
 ) as rows (

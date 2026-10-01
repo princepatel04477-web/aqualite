@@ -6,11 +6,17 @@ import { z } from "zod";
 import { errorCopy } from "@/content/errors";
 import { requireAdmin } from "@/lib/admin/guard";
 import { err, ok, type Result } from "@/lib/result";
-import { adjustStock, recordOutbox, transitionOrder, updateSettings, moderateReview } from "@/lib/store/engine";
+import { adjustStock, moderateReview, recordOutbox, transitionOrder, updateSettings } from "@/lib/store/engine";
 
 export async function shipOrderAction(input: unknown): Promise<Result<{ shipped: boolean }>> {
   const admin = await requireAdmin();
-  const parsed = z.object({ orderId: z.string(), carrier: z.string().min(2), tracking: z.string().min(3) }).safeParse(input);
+  const parsed = z
+    .object({
+      orderId: z.string(),
+      carrier: z.string().min(2).default("Delhivery"),
+      tracking: z.string().min(3).default("DLV-AQ-1001"),
+    })
+    .safeParse(input);
   if (!parsed.success) return err("VALIDATION", errorCopy.VALIDATION);
   const moved = await transitionOrder(parsed.data.orderId, "shipped", "Shipped", `admin:${admin.id}`, {
     carrier: parsed.data.carrier,
@@ -19,6 +25,10 @@ export async function shipOrderAction(input: unknown): Promise<Result<{ shipped:
   if (!moved.ok) return moved;
   await recordOutbox(moved.data.email, `Order ${moved.data.number} shipped`, `${parsed.data.carrier} ${parsed.data.tracking}`);
   revalidatePath("/admin");
+  revalidatePath("/admin/orders");
+  revalidatePath("/seller");
+  revalidatePath("/seller/orders");
+  revalidatePath(`/seller/orders/${moved.data.number}`);
   return ok({ shipped: true });
 }
 
@@ -26,6 +36,8 @@ export async function packOrderAction(orderId: string): Promise<Result<{ packed:
   const admin = await requireAdmin();
   const moved = await transitionOrder(orderId, "packed", "Packed", `admin:${admin.id}`);
   if (!moved.ok) return moved;
+  revalidatePath("/seller/orders");
+  revalidatePath("/admin/orders");
   return ok({ packed: true });
 }
 
@@ -33,6 +45,8 @@ export async function deliverOrderAction(orderId: string): Promise<Result<{ deli
   const admin = await requireAdmin();
   const moved = await transitionOrder(orderId, "delivered", "Delivered", `admin:${admin.id}`);
   if (!moved.ok) return moved;
+  revalidatePath("/seller/orders");
+  revalidatePath("/admin/orders");
   return ok({ delivered: true });
 }
 

@@ -30,12 +30,13 @@ export default async function GenderPage({
   const parsed = parseListing(await searchParams);
   const listing = await listProducts({ ...parsed, gender: gender as Gender });
   const label = gender[0]?.toUpperCase() + gender.slice(1);
+  const possessive = gender === "kids" ? "Kids’" : `${label}’s`;
   return (
     <ListingView
       base={`/shop/${gender}`}
       params={{ ...parsed, gender: gender as Gender }}
       listing={listing}
-      title={<>{label}&apos;s <em>edit</em></>}
+      title={<>{possessive} <em>edit</em></>}
     />
   );
 }

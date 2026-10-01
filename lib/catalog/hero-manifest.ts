@@ -21,7 +21,7 @@ const slim = (entry: Record<string, unknown>): HeroMediaEntry =>
 export const HERO_MEDIA: Record<string, HeroMediaEntry> = {
   "/catalog/hero-tide-slide.jpg": slim({
   "base": "/catalog/hero/tide-slide/hero-desktop",
-  "quality": "render",
+  "quality": "composite",
   "widths": [
     828,
     1280,
@@ -32,23 +32,23 @@ export const HERO_MEDIA: Record<string, HeroMediaEntry> = {
     "webp"
   ],
   "fallback": "/catalog/hero/tide-slide/hero-desktop-1920.jpg",
-  "blurDataURL": "data:image/webp;base64,UklGRloAAABXRUJQVlA4IE4AAACQAwCdASoYABAAPu1mq04ppaQiMAgBMB2JZwAAW+pdIWSg91QAAP70It7kDzDSkYiy126bUfZy2XcuY6wm+rmi/NWZvYIJBCsZDV2AAAA=",
-  "aspect": 1.5,
-  "glowHex": "#57B3BA",
+  "blurDataURL": "data:image/webp;base64,UklGRooAAABXRUJQVlA4IH4AAAAwBACdASoYAA4APu1iqk4ppaQiMAgBMB2JZwDCgYww27NYKoM3jw/S1aAA/vHP4iLnt9qnjG5YdLKy1OZga3r0Q3jkBCRQdSwT9nqB+FFlpKaEiY1qCcUWdkFeW5bLg/qftprpMtmYjQw44dLPRNc40vxzwFuSC8k2g1T4AAA=",
+  "aspect": 1.7142857142857142,
+  "glowHex": "#63A0A0",
   "bytes": {
-    "avif:828": 8285,
-    "webp:828": 9276,
-    "avif:1280": 21766,
-    "webp:1280": 23302,
-    "avif:1920": 36888,
-    "webp:1920": 40282,
-    "jpg:1920": 64810
+    "avif:828": 16353,
+    "webp:828": 22446,
+    "avif:1280": 32865,
+    "webp:1280": 44044,
+    "avif:1920": 51302,
+    "webp:1920": 77134,
+    "jpg:1920": 70629
   },
   "withinBudget": true
 }),
   "/catalog/hero/tide-slide/hero-mobile": slim({
   "base": "/catalog/hero/tide-slide/hero-mobile",
-  "quality": "render",
+  "quality": "composite",
   "widths": [
     480,
     828,
@@ -59,23 +59,23 @@ export const HERO_MEDIA: Record<string, HeroMediaEntry> = {
     "webp"
   ],
   "fallback": "/catalog/hero/tide-slide/hero-mobile-1080.jpg",
-  "blurDataURL": "data:image/webp;base64,UklGRnQAAABXRUJQVlA4IGgAAAAwBACdASoYAB4APuFWpk2opCOiN/qoARAcCUAAC3Z+LtcKGx/U4dI1gRgA/vQdWjBqdPX4aFV2Bsr7kaC09XbiWxLk9CbnuQ1PWI+mKoSyXYNDQCZw8WUpjvjCFwtPPGv0V4cy8GsAAA==",
-  "aspect": 0.8055555555555556,
-  "glowHex": "#57B3BA",
+  "blurDataURL": "data:image/webp;base64,UklGRoQAAABXRUJQVlA4IHgAAABwBACdASoYABUAPt1cpE2opSOiN/qoARAbiWcAyFwh3+Pzx7c7BiXqYub3AAD+82snl51iWg92zzu1VAWosyO2eTZAVowAF2GfLCQhmmeOCA597upe99uurFiC3OOBap/NpFIBs7pVbYMu+VnQhDWyr7PqoFeAAAA=",
+  "aspect": 1.125,
+  "glowHex": "#63A0A0",
   "bytes": {
-    "avif:480": 3616,
-    "webp:480": 4402,
-    "avif:828": 7938,
-    "webp:828": 10590,
-    "avif:1080": 11035,
-    "webp:1080": 14878,
-    "jpg:1080": 29904
+    "avif:480": 7989,
+    "webp:480": 11204,
+    "avif:828": 17879,
+    "webp:828": 25204,
+    "avif:1080": 27034,
+    "webp:1080": 37798,
+    "jpg:1080": 29991
   },
   "withinBudget": true
 }),
   "/catalog/hero/pearl-slide/hero-desktop": slim({
   "base": "/catalog/hero/pearl-slide/hero-desktop",
-  "quality": "render",
+  "quality": "composite",
   "widths": [
     828,
     1280,
@@ -86,23 +86,23 @@ export const HERO_MEDIA: Record<string, HeroMediaEntry> = {
     "webp"
   ],
   "fallback": "/catalog/hero/pearl-slide/hero-desktop-1920.jpg",
-  "blurDataURL": "data:image/webp;base64,UklGRnQAAABXRUJQVlA4IGgAAADwAwCdASoYAA0APu1kqU2ppaQiMAgBMB2JYgCsAGlgCFowNxhEY9WgAP79m5i57Smm8XaadbPQODVJrPhxtCL3gP1GfMRxTzjUFlipyH0ekSDMe0+S2muNf5scTSsgu04UKGaejh4oAA==",
-  "aspect": 1.7916666666666667,
-  "glowHex": "#CF918E",
+  "blurDataURL": "data:image/webp;base64,UklGRmQAAABXRUJQVlA4IFgAAAAQBACdASoYAA4APu1iqU2ppaOiMAgBMB2JZQCsMoADTrNXRbexNOVVFAD+8cTpMeDqdR49V3+eDIEdYhHScCzeEYXmfUkSuo0cqOw9K9bHe1Prp30w2AAA",
+  "aspect": 1.7142857142857142,
+  "glowHex": "#D8ACA5",
   "bytes": {
-    "avif:828": 3998,
-    "webp:828": 4972,
-    "avif:1280": 7354,
-    "webp:1280": 9724,
-    "avif:1920": 12562,
-    "webp:1920": 17904,
-    "jpg:1920": 38734
+    "avif:828": 10803,
+    "webp:828": 17422,
+    "avif:1280": 19603,
+    "webp:1280": 32190,
+    "avif:1920": 30356,
+    "webp:1920": 57168,
+    "jpg:1920": 40163
   },
   "withinBudget": true
 }),
   "/catalog/hero/pearl-slide/hero-mobile": slim({
   "base": "/catalog/hero/pearl-slide/hero-mobile",
-  "quality": "render",
+  "quality": "composite",
   "widths": [
     480,
     828,
@@ -113,23 +113,23 @@ export const HERO_MEDIA: Record<string, HeroMediaEntry> = {
     "webp"
   ],
   "fallback": "/catalog/hero/pearl-slide/hero-mobile-1080.jpg",
-  "blurDataURL": "data:image/webp;base64,UklGRnIAAABXRUJQVlA4IGYAAAAQBQCdASoYAB4APu1mqU4ppaOiMAgBMB2JZgCsACHfx4D/TpXpqCLn3J8esa899tTAAP7wvLM3aOXLlLy1sS5BWGcJJv+QYtC1sPEiVtQ9jxV8W9X8NJjEATfrmebdTnFwtgi5QAA=",
-  "aspect": 0.8055555555555556,
-  "glowHex": "#CF918E",
+  "blurDataURL": "data:image/webp;base64,UklGRmAAAABXRUJQVlA4IFQAAAAwBACdASoYABUAPu1sq08ppiOiMBgIATAdiWcAwcwQ78bgO6cNK8O9KoAA/vHDpluvXD9GGdtopFr+nW+OmkuoAxuFOQsEs/JCRR5yIMVjB5IjAAA=",
+  "aspect": 1.125,
+  "glowHex": "#D8ACA5",
   "bytes": {
-    "avif:480": 2875,
-    "webp:480": 3578,
-    "avif:828": 5642,
-    "webp:828": 7954,
-    "avif:1080": 8266,
-    "webp:1080": 11434,
-    "jpg:1080": 25729
+    "avif:480": 6638,
+    "webp:480": 10140,
+    "avif:828": 11073,
+    "webp:828": 18512,
+    "avif:1080": 15368,
+    "webp:1080": 25974,
+    "jpg:1080": 17614
   },
   "withinBudget": true
 }),
   "/catalog/hero/cove-clog/hero-desktop": slim({
   "base": "/catalog/hero/cove-clog/hero-desktop",
-  "quality": "render",
+  "quality": "composite",
   "widths": [
     828,
     1280,
@@ -140,23 +140,23 @@ export const HERO_MEDIA: Record<string, HeroMediaEntry> = {
     "webp"
   ],
   "fallback": "/catalog/hero/cove-clog/hero-desktop-1920.jpg",
-  "blurDataURL": "data:image/webp;base64,UklGRmwAAABXRUJQVlA4IGAAAACwAwCdASoYAA0APu1orU2ppqSiMAgBMB2JZQC7AGk8E6a+v4dGfAD+/hTWuZfV75WjZ+wX/q2WisgJto6SJc3muU1ZSWtka8mHOBCZEXhuHH9yO0Yk1IkaCpAjXHgAAAA=",
-  "aspect": 1.7916666666666667,
-  "glowHex": "#829481",
+  "blurDataURL": "data:image/webp;base64,UklGRmwAAABXRUJQVlA4IGAAAADQAwCdASoYAA4APu1iqk2ppaQiMAgBMB2JZwAAW+v13KdInnhXswAA/vHPi4UOO0eeCjmX6dD0GjLkjqIQB8K70cF0nb7Hha1IbFb/1q3BLQGQR8Bm766IyEvHSXgAAAA=",
+  "aspect": 1.7142857142857142,
+  "glowHex": "#B2B5A7",
   "bytes": {
-    "avif:828": 8316,
-    "webp:828": 9282,
-    "avif:1280": 14850,
-    "webp:1280": 17848,
-    "avif:1920": 22266,
-    "webp:1920": 28176,
-    "jpg:1920": 54163
+    "avif:828": 16514,
+    "webp:828": 23802,
+    "avif:1280": 28857,
+    "webp:1280": 40974,
+    "avif:1920": 42536,
+    "webp:1920": 70358,
+    "jpg:1920": 59886
   },
   "withinBudget": true
 }),
   "/catalog/hero/cove-clog/hero-mobile": slim({
   "base": "/catalog/hero/cove-clog/hero-mobile",
-  "quality": "render",
+  "quality": "composite",
   "widths": [
     480,
     828,
@@ -167,23 +167,23 @@ export const HERO_MEDIA: Record<string, HeroMediaEntry> = {
     "webp"
   ],
   "fallback": "/catalog/hero/cove-clog/hero-mobile-1080.jpg",
-  "blurDataURL": "data:image/webp;base64,UklGRo4AAABXRUJQVlA4IIIAAAAwBQCdASoYAB4APuFWpk2opKOiN/qoARAcCWUAuwAh3+b0LLpBdV6cbEO0ybFd0iyAAAD+9CN8U6R0xINFXcygjkutAH4fJ2ySLnOFBy6nrRmkykC/NjqRaw2OrLFSZIVmPuZHR/XKoXShfaNYiDruEKzTAuW7WQ0ZPuV8zt41wAAA",
-  "aspect": 0.8055555555555556,
-  "glowHex": "#829481",
+  "blurDataURL": "data:image/webp;base64,UklGRoAAAABXRUJQVlA4IHQAAABQBACdASoYABUAPuVepk2pJSOiN/VYASAciWkAyFwQ7+H3d/gkq2aP1JgAAP7xw9rp15w9K0ksFeqXnZgAX/xAJg21CivLjFU/6J50t1Fdjyjzya8Cb61yyceShyIqeKI393hnzP0jLRPO/M5BF2mF+AAAAA==",
+  "aspect": 1.125,
+  "glowHex": "#B2B5A7",
   "bytes": {
-    "avif:480": 7232,
-    "webp:480": 7854,
-    "avif:828": 14550,
-    "webp:828": 16910,
-    "avif:1080": 19178,
-    "webp:1080": 23338,
-    "jpg:1080": 47244
+    "avif:480": 10815,
+    "webp:480": 14898,
+    "avif:828": 21082,
+    "webp:828": 29752,
+    "avif:1080": 27763,
+    "webp:1080": 40498,
+    "jpg:1080": 34034
   },
   "withinBudget": true
 }),
   "/catalog/hero/harbour-clog/hero-desktop": slim({
   "base": "/catalog/hero/harbour-clog/hero-desktop",
-  "quality": "render",
+  "quality": "composite",
   "widths": [
     828,
     1280,
@@ -194,23 +194,23 @@ export const HERO_MEDIA: Record<string, HeroMediaEntry> = {
     "webp"
   ],
   "fallback": "/catalog/hero/harbour-clog/hero-desktop-1920.jpg",
-  "blurDataURL": "data:image/webp;base64,UklGRlIAAABXRUJQVlA4IEYAAADQAwCdASoYAA0APu1kqk2ppaQiMAgBMB2JYwC7ACHfxCs54NmHyAAA/vKgYwZGTeiiLcyzCosUQQe7R7473MrbXR/hwAAA",
-  "aspect": 1.7916666666666667,
-  "glowHex": "#3B4F69",
+  "blurDataURL": "data:image/webp;base64,UklGRoAAAABXRUJQVlA4IHQAAAAwBACdASoYAA4APu1mqk4ppaOiMAgBMB2JZQDCgYt83nWB6DesJwewnGgA/vHMeLzNT1gpy0TIEO8Gv2uy5VbnH+ZbVb1zbLB7/jsKdZSKMP/QwxIuIzhF8MTSX1pYpQXJ7gkr6LjEFDTkodlFXKLEOHwgAA==",
+  "aspect": 1.7142857142857142,
+  "glowHex": "#686F81",
   "bytes": {
-    "avif:828": 7684,
-    "webp:828": 7882,
-    "avif:1280": 18784,
-    "webp:1280": 18786,
-    "avif:1920": 28737,
-    "webp:1920": 30894,
-    "jpg:1920": 50679
+    "avif:828": 18904,
+    "webp:828": 27018,
+    "avif:1280": 36300,
+    "webp:1280": 50698,
+    "avif:1920": 56645,
+    "webp:1920": 86212,
+    "jpg:1920": 77633
   },
   "withinBudget": true
 }),
   "/catalog/hero/harbour-clog/hero-mobile": slim({
   "base": "/catalog/hero/harbour-clog/hero-mobile",
-  "quality": "render",
+  "quality": "composite",
   "widths": [
     480,
     828,
@@ -221,23 +221,23 @@ export const HERO_MEDIA: Record<string, HeroMediaEntry> = {
     "webp"
   ],
   "fallback": "/catalog/hero/harbour-clog/hero-mobile-1080.jpg",
-  "blurDataURL": "data:image/webp;base64,UklGRmYAAABXRUJQVlA4IFoAAADQAwCdASoYAB4APu1mq06ppaQiKA1RMB2JYwC2yBEczGDvvKvNFAAA/vKhQEpfozj69bXoNnE+nCwbtm+7bWolR1hO5yBBgH3fmU6cjUx5eVfST/0RFiMDAAA=",
-  "aspect": 0.8055555555555556,
-  "glowHex": "#3B4F69",
+  "blurDataURL": "data:image/webp;base64,UklGRpIAAABXRUJQVlA4IIYAAADQBACdASoYABUAPtlepE2oJaOiN/qoAQAbCWUAygAh3+DqE2ZJONeb+W5P5pmlUAD+82sl2UyxHkksRxWG8+7OSfOal54s21EEDj5FaTTpWTGLuhv3MOb2/7NoWepLCPZ5b7WDopGi2z7Ska/yxWUesxYg6GytVpQPsrO+wmxnk1IQGFAAAA==",
+  "aspect": 1.125,
+  "glowHex": "#686F81",
   "bytes": {
-    "avif:480": 4762,
-    "webp:480": 5090,
-    "avif:828": 11879,
-    "webp:828": 12408,
-    "avif:1080": 15879,
-    "webp:1080": 17512,
-    "jpg:1080": 30788
+    "avif:480": 12247,
+    "webp:480": 17834,
+    "avif:828": 27389,
+    "webp:828": 38178,
+    "avif:1080": 38545,
+    "webp:1080": 54590,
+    "jpg:1080": 47075
   },
   "withinBudget": true
 }),
   "/catalog/hero/reef-flip/hero-desktop": slim({
   "base": "/catalog/hero/reef-flip/hero-desktop",
-  "quality": "render",
+  "quality": "composite",
   "widths": [
     828,
     1280,
@@ -248,23 +248,23 @@ export const HERO_MEDIA: Record<string, HeroMediaEntry> = {
     "webp"
   ],
   "fallback": "/catalog/hero/reef-flip/hero-desktop-1920.jpg",
-  "blurDataURL": "data:image/webp;base64,UklGRnIAAABXRUJQVlA4IGYAAADwAwCdASoYAA0APu1orU6ppiSiMAgBMB2JYwCo9Gk8E5xYxl3baKewAP79U5R2zP10Vbjr+/+Sl22/izzaxn/GenRaN+duQrSUSGfJn32a1BALJGDnreTivZPXFYFjc5UZGCDpXAA=",
-  "aspect": 1.7916666666666667,
-  "glowHex": "#9B8360",
+  "blurDataURL": "data:image/webp;base64,UklGRlQAAABXRUJQVlA4IEgAAAAQBACdASoYAA4APu1kqU4ppaOiMAgBMB2JZwCAAAiui5I5prpZm+3yAAD+8c9TESAlwaTLR9enVQ5CU1etRzlVQZgexb0gAAA=",
+  "aspect": 1.7142857142857142,
+  "glowHex": "#E1DCD2",
   "bytes": {
-    "avif:828": 4734,
-    "webp:828": 5946,
-    "avif:1280": 7966,
-    "webp:1280": 10760,
-    "avif:1920": 12772,
-    "webp:1920": 18656,
-    "jpg:1920": 36629
+    "avif:828": 10693,
+    "webp:828": 15740,
+    "avif:1280": 18096,
+    "webp:1280": 28198,
+    "avif:1920": 28038,
+    "webp:1920": 50048,
+    "jpg:1920": 33327
   },
   "withinBudget": true
 }),
   "/catalog/hero/reef-flip/hero-mobile": slim({
   "base": "/catalog/hero/reef-flip/hero-mobile",
-  "quality": "render",
+  "quality": "composite",
   "widths": [
     480,
     828,
@@ -275,17 +275,17 @@ export const HERO_MEDIA: Record<string, HeroMediaEntry> = {
     "webp"
   ],
   "fallback": "/catalog/hero/reef-flip/hero-mobile-1080.jpg",
-  "blurDataURL": "data:image/webp;base64,UklGRmwAAABXRUJQVlA4IGAAAAAwBACdASoYAB4APuVeqE2pJSQjMAwBIByJYwC7ACHfx0fqeQ2tmOHkSmgA/vKYNaA6NPY2N7OuGC6EdVkW1/GmIXKpT7A5kvMyNynUjazXMD9ZksQvz0vv+538k1gTAAA=",
-  "aspect": 0.8055555555555556,
-  "glowHex": "#9B8360",
+  "blurDataURL": "data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAADwAwCdASoYABUAPu1mqk2ppaQiMAgBMB2JaQDM0CHfj4cu6CXY5ZVAAP7xw6Xpx1H/g4pLpvHub4iUn03LTPOQAAA=",
+  "aspect": 1.125,
+  "glowHex": "#E1DCD2",
   "bytes": {
-    "avif:480": 3370,
-    "webp:480": 4124,
-    "avif:828": 6515,
-    "webp:828": 8852,
-    "avif:1080": 8899,
-    "webp:1080": 12692,
-    "jpg:1080": 25432
+    "avif:480": 6913,
+    "webp:480": 9090,
+    "avif:828": 11315,
+    "webp:828": 16834,
+    "avif:1080": 14507,
+    "webp:1080": 22904,
+    "jpg:1080": 14809
   },
   "withinBudget": true
 }),

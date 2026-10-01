@@ -21,8 +21,9 @@ export default async function AccountPage() {
       <div className="mt-8 flex flex-wrap gap-4 font-mono text-eyebrow uppercase text-mist">
         <Link href="/account/orders" className="link-draw">Orders</Link>
         <Link href="/account/addresses" className="link-draw">Addresses</Link>
+        <Link href="/account/wishlist" className="link-draw">Wishlist</Link>
         <Link href="/account/profile" className="link-draw">Profile</Link>
-        {session.role === "admin" ? <Link href="/admin" className="text-aqua">Admin</Link> : null}
+        {session.role === "admin" ? <Link href="/seller" className="text-aqua">Seller Hub</Link> : null}
       </div>
       {latest ? (
         <article className="mt-10 border border-hairline p-6">
