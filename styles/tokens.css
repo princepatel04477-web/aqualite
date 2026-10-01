@@ -1,0 +1,180 @@
+:root {
+  /* AQUALITE IVORY & RED — channels, not hex, so Tailwind alpha works.
+     THE ONLY PLACE RAW COLOUR MAY BE WRITTEN. See docs/design/IVORY_RED.md
+     for the computed contrast table (all text tokens >= 4.5:1 on ivory,
+     paper and linen; --on-red >= 4.5:1 on --red). */
+
+  /* Surfaces */
+  --ivory: 250 246 238; /* #FAF6EE — page background */
+  --paper: 255 253 249; /* #FFFDF9 — raised: cards, inputs, menus */
+  --linen: 242 236 224; /* #F2ECE0 — secondary: hover, table headers */
+  --porcelain: 241 238 232; /* #F1EEE8 — product image stage */
+  --hairline: 227 217 200; /* #E3D9C8 — default borders */
+  --rule: 207 195 175; /* #CFC3AF — strong borders: inputs, table rules */
+
+  /* Text */
+  --ink: 27 23 20; /* #1B1714 — headings + body (16.52:1 on ivory) */
+  --ink-2: 74 66 59; /* #4A423B — labels, table text, secondary headings */
+  --muted: 110 101 91; /* #6E655B — placeholders, hints, meta (5.30:1) */
+  --ink-on-porcelain: var(--ink); /* TEMPORARY alias — see alias layer */
+
+  /* Brand */
+  --red: 200 16 46; /* #C8102E — primary CTAs, wordmark, sale %, accents */
+  --red-deep: 155 13 35; /* #9B0D23 — hover/pressed of --red */
+  --red-ink: 163 15 38; /* #A30F26 — red as TEXT: links, sale price, em */
+  --red-tint: 251 234 236; /* #FBEAEC — selection / brand tint fill */
+  --on-red: 255 255 255; /* #FFFFFF — text on --red / --red-deep / --danger */
+
+  /* Status — every foreground passes AA on ivory/paper/linen (see
+     IVORY_RED.md for the two spec deviations: success + warning darkened). */
+  --success: 27 113 72; /* #1B7148 */
+  --success-tint: 230 243 236; /* #E6F3EC */
+  --warning: 143 92 0; /* #8F5C00 */
+  --warning-tint: 253 243 220; /* #FDF3DC */
+  --danger: 180 35 24; /* #B42318 */
+  --danger-tint: 253 236 234; /* #FDECEA */
+  --info: 36 91 143; /* #245B8F */
+  --info-tint: 232 240 248; /* #E8F0F8 */
+
+  /* Product swatches — catalogue colour, not UI chrome. */
+  --swatch-midnight: 28 30 32;
+  --swatch-ink: 22 24 26;
+  --swatch-sand: 196 176 148;
+  --swatch-beige: 214 196 170;
+  --swatch-navy: 36 52 78;
+  --swatch-blue: 46 78 112;
+  --swatch-fog: 168 172 174;
+  --swatch-grey: 154 158 160;
+  --swatch-blush: 232 196 196;
+  --swatch-pink: 214 156 168;
+  --swatch-white: 244 244 242;
+  --swatch-cloud: 236 236 234;
+  --swatch-sage: 154 168 150;
+  --swatch-green: 92 122 96;
+  --swatch-olive: 107 112 78;
+  --swatch-aqua: 79 160 154;
+  --swatch-brown: 122 90 62;
+  --swatch-red: 168 72 68;
+  --swatch-multi: 79 160 154;
+
+  /* Type scale — storefront (fluid, generous). Fonts come from next/font
+     (app/fonts.ts): --font-display / --font-body / --font-mono. */
+  --t-hero: clamp(3.5rem, 9vw, 10rem);
+  --t-display: clamp(3.25rem, 7.4vw, 8.75rem);
+  --t-h1: clamp(2.75rem, 6vw, 6rem);
+  --t-h2: clamp(2.25rem, 4.5vw, 4.5rem);
+  --t-h3: clamp(1.5rem, 2.2vw, 2rem);
+  --t-lead: clamp(1.125rem, 1.4vw, 1.375rem);
+  --t-body: 1rem;
+  --t-small: 0.875rem;
+  --t-eyebrow: 0.6875rem;
+  --t-price: 1rem;
+  --t-size: 0.8125rem;
+  --t-button: 0.8125rem;
+  --t-logo: 1.65rem;
+  --t-mark: clamp(3.5rem, 18vw, 14rem);
+
+  /* Type scale — Seller Hub, dense. Exposed as .text-hub-* in globals.css
+     (size + line-height + face + weight together); names registered in
+     lib/cn.ts so tailwind-merge groups them with other font sizes. */
+  --t-hub-title: 1.75rem; /* 28px — page title, Instrument Serif */
+  --lh-hub-title: 2rem; /* 32px */
+  --t-hub-section: 1rem; /* 16px — card/section heading, 600 */
+  --lh-hub-section: 1.375rem; /* 22px */
+  --t-hub-body: 0.875rem; /* 14px — primary UI copy */
+  --lh-hub-body: 1.25rem; /* 20px */
+  --t-hub-table: 0.8125rem; /* 13px — table cells, tabular */
+  --lh-hub-table: 1.125rem; /* 18px */
+  --t-hub-label: 0.75rem; /* 12px — field labels, badges, meta */
+  --lh-hub-label: 1rem; /* 16px */
+  --t-hub-id: 0.75rem; /* 12px — order/SKU ids, JetBrains Mono */
+  --lh-hub-id: 1rem; /* 16px */
+  --t-hub-kpi: 1.75rem; /* 28px — metric numbers, 600 tabular */
+  --lh-hub-kpi: 2rem; /* 32px */
+
+  /* Space */
+  --space-1: 0.25rem;
+  --space-section: clamp(6rem, 12vw, 11rem);
+  --page-pad: clamp(1.25rem, 4vw, 3.5rem);
+  --gutter: clamp(1rem, 2vw, 1.5rem);
+  --page-max: 1600px;
+
+  /* Shape */
+  --radius-panel: 2px;
+  --radius-pill: 999px;
+  --radius-hub: 6px; /* Seller Hub cards */
+  --radius-control: 4px; /* inputs + compact buttons */
+
+  /* Elevation */
+  --shadow-1: 0 1px 2px rgb(27 23 20 / 0.06);
+  --shadow-2: 0 4px 12px rgb(27 23 20 / 0.1);
+  --shadow-3: 0 12px 32px rgb(27 23 20 / 0.16);
+
+  /* Density — Seller Hub metrics (consumed as built-ins: h-8/h-9/h-11,
+     p-6, gap-4 — mirrored here as the documented source). */
+  --control-h-compact: 32px; /* toolbar / dense actions */
+  --control-h: 36px; /* inputs, buttons, default rows */
+  --table-row-compact: 36px; /* tables */
+  --table-row: 44px; /* comfortable rows */
+  --hub-page-pad: 24px;
+  --hub-grid-gap: 16px;
+
+  /* Motion — the only cubic-bezier / duration source for CSS. */
+  --ease-tide: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-surface: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-drop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-instant: 0.12s;
+  --dur-quick: 0.24s;
+  --dur-base: 0.45s;
+  --dur-slow: 0.8s;
+  --dur-cinematic: 1.2s;
+  --dur-glow: 0.4s; /* H06 mobile glow-var morph (synced with hero.mobile.glowMs) */
+
+  /* Layers */
+  --z-base: 0;
+  --z-sticky: 20;
+  --z-header: 40;
+  --z-drawer: 60;
+  --z-overlay: 70;
+  --z-modal: 80;
+  --z-toast: 90;
+  --z-preloader: 100;
+
+  --header-h: 4.5rem;
+  --header-h-compact: 3.75rem;
+
+  /* ---------------------------------------------------------- ALIAS LAYER
+     TEMPORARY: retired Deep Water names → new channels, mapped by ROLE so
+     un-migrated page code keeps resolving until S02 (storefront) / S04
+     (admin) deletes those class names. `npm run tokens:check` lists every
+     alias still referenced. This block is the ONLY place an alias may be
+     defined; delete a line when its last usage is migrated. */
+  --abyss: var(--ivory); /* was deepest bg → page surface */
+  --trench: var(--paper); /* was 2nd surface → raised paper */
+  --shelf: var(--linen); /* was hover surface → linen */
+  --foam: var(--ink); /* was light text → ink text */
+  --mist: var(--muted); /* was 2nd text → muted */
+  --aqua: var(--red-ink); /* was accent → red text accent */
+  --aqua-deep: var(--red-deep); /* was deep accent → red-deep */
+  --sand: var(--red-ink); /* was warm accent → red-ink (italic em, links) */
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --header-h: 4rem;
+  }
+}
+
+/* Seller Hub uses the same Ivory & Red design tokens as the storefront. */
+.seller-hub {
+  color: rgb(var(--ink));
+  background: rgb(var(--ivory));
+}
+
+/* Per-slide hero glow colour (data, set inline at runtime). @property needs
+   a literal initial value — the token file is the only place literals live. */
+@property --hero-glow {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #c8102e;
+}
