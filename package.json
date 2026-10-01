@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "create-admin": "node scripts/create-admin.mjs",
     "demo:reset": "node scripts/demo-reset.mjs",
+    "demo:orders": "node scripts/demo-orders.mjs",
     "hero:images": "node --experimental-strip-types scripts/hero-images.ts",
     "hero:composite": "node --experimental-strip-types scripts/hero-composite.ts",
     "hero:contact-sheet": "node --experimental-strip-types scripts/hero-contact-sheet.ts",

@@ -115,6 +115,7 @@ export function ProductGallery({
               <button
                 key={`thumb-${image.src}-${idx}`}
                 type="button"
+                data-testid={`gallery-thumb-${idx}`}
                 onClick={() => setActiveIndex(idx)}
                 aria-label={`Show ${image.alt}`}
                 aria-current={idx === activeIndex ? "true" : undefined}

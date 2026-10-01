@@ -1672,6 +1672,7 @@ export async function hubSnapshot(): Promise<{
   settings: Settings;
   products: CatalogProduct[];
   outbox: EmailOut[];
+  messageThreads: MessageThread[];
 }> {
   const state = await load();
   return {
@@ -1686,6 +1687,7 @@ export async function hubSnapshot(): Promise<{
     settings: state.settings,
     products: allProducts(state),
     outbox: state.outbox,
+    messageThreads: state.messageThreads ?? [],
   };
 }
 

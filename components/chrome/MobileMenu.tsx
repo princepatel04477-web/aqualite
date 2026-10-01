@@ -11,8 +11,8 @@ import { useLenis } from "@/components/motion/SmoothScroll";
 const items = [
   { href: "/shop/men", label: "Men" },
   { href: "/shop/women", label: "Women" },
-  { href: "/shop/kids", label: "Kids" },
   { href: "/collections/everyday-slides", label: "Slides" },
+  { href: "/collections/monsoon-ready", label: "Monsoon Ready" },
   { href: "/collections/new-season", label: "New in" },
 ];
 

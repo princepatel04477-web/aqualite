@@ -217,6 +217,30 @@ function buildProduct(input: {
     netQuantity: "1 Pair",
     colorways: input.colors.map((color) => {
       const colorCode = color.slug.slice(0, 3).toUpperCase();
+      const baseImg = color.image.replace(/\.jpg$/, "");
+      const defaultGallery: CatalogImage[] = [
+        {
+          src: `${baseImg}-top.jpg`,
+          alt: `${input.name} in ${color.name} — angled top profile on porcelain`,
+          role: "secondary",
+          width: 1024,
+          height: 1280,
+        },
+        {
+          src: `${baseImg}-sole.jpg`,
+          alt: `${input.name} in ${color.name} — anti-skid outsole and heel profile`,
+          role: "sole",
+          width: 1024,
+          height: 1280,
+        },
+        {
+          src: `${baseImg}-detail.jpg`,
+          alt: `${input.name} in ${color.name} — upper strap and texture detail`,
+          role: "detail",
+          width: 1024,
+          height: 1280,
+        },
+      ];
       return {
         id: `cw_${input.slug.replaceAll("-", "_")}_${color.slug}`,
         slug: color.slug,
@@ -232,11 +256,11 @@ function buildProduct(input: {
             width: 1024,
             height: 1280,
           },
-          ...(color.extra ?? []),
+          ...(color.extra ?? defaultGallery),
         ],
         variants: sizes.map((size) => {
           const override = color.stock?.[size.uk];
-          const stock = override ?? input.defaultStock ?? 12;
+          const stock = override ?? input.defaultStock ?? 28;
           return {
             id: `v_${input.slug.replaceAll("-", "_")}_${color.slug}_${skuSize(size.uk)}`,
             sku: `AQ-${cat}-${productCode}-${colorCode}-${skuSize(size.uk)}`,
@@ -278,16 +302,7 @@ export const products: CatalogProduct[] = [
         family: "black",
         image: "/catalog/tide-slide-midnight.jpg",
         alt: "Men's black Tide Slide with a thin aqua accent on a porcelain background",
-        extra: [
-          {
-            src: "/catalog/hero-tide-slide.jpg",
-            alt: "Tide Slide floating against a dark water background",
-            role: "secondary",
-            width: 1400,
-            height: 1000,
-          },
-        ],
-        stock: { 8: 2, 11: 0, 9: 1 },
+        stock: { 8: 2, 11: 0, 9: 3 },
       },
       {
         slug: "sand",
@@ -330,7 +345,7 @@ export const products: CatalogProduct[] = [
         family: "grey",
         image: "/catalog/harbour-clog-fog.jpg",
         alt: "Men's fog grey Harbour Clog on a porcelain background",
-        stock: { 9: 1 },
+        stock: { 9: 2, 11: 0 },
       },
     ],
   }),
@@ -390,7 +405,7 @@ export const products: CatalogProduct[] = [
         family: "black",
         image: "/catalog/pearl-slide-ink.jpg",
         alt: "Women's ink black Pearl Slide on a porcelain background",
-        stock: { 8: 1 },
+        stock: { 3: 0, 8: 2 },
       },
     ],
   }),

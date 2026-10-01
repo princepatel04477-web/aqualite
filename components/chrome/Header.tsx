@@ -102,6 +102,9 @@ export function Header({
         <nav className="hidden items-center gap-7 lg:flex" aria-label="Primary">
           {links.map((link) => {
             const group = link.key ? nav.find((item) => item.gender === link.key) : null;
+            if (link.key && (!group || group.categories.every((c) => c.count === 0))) {
+              return null;
+            }
             const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
               <div
@@ -154,18 +157,20 @@ export function Header({
             <div className="lg:col-span-4">
               <p className="font-mono text-eyebrow uppercase text-mist">Shop by type</p>
               <ul className="mt-4 space-y-2">
-                {mega.categories.map((category) => (
-                  <li key={category.slug}>
-                    <Link
-                      href={`/shop/${mega.gender}/${category.slug}`}
-                      className="flex items-baseline justify-between gap-6 font-body text-body text-foam hover:text-aqua"
-                      onClick={() => setMega(null)}
-                    >
-                      <span>{category.name}</span>
-                      <span className="font-mono text-size text-mist">{category.count}</span>
-                    </Link>
-                  </li>
-                ))}
+                {mega.categories
+                  .filter((category) => category.count > 0)
+                  .map((category) => (
+                    <li key={category.slug}>
+                      <Link
+                        href={`/shop/${mega.gender}/${category.slug}`}
+                        className="flex items-baseline justify-between gap-6 font-body text-body text-foam hover:text-aqua"
+                        onClick={() => setMega(null)}
+                      >
+                        <span>{category.name}</span>
+                        <span className="font-mono text-size text-mist">{category.count}</span>
+                      </Link>
+                    </li>
+                  ))}
               </ul>
             </div>
             <div className="lg:col-span-3">

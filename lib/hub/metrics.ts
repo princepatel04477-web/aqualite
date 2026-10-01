@@ -141,7 +141,7 @@ export async function loadWidget(id: WidgetId, now = new Date()): Promise<Widget
       { label: "Returns awaiting authorisation", count: snapshot.returns.filter((row) => row.status === "requested").length, href: "/seller/orders?filter=returns" },
       { label: "Orders needing attention", count: snapshot.orders.filter((row) => row.needsAttention).length, href: "/seller/orders?filter=attention" },
       { label: "Reviews pending moderation", count: snapshot.reviews.filter((row) => row.status === "pending").length, href: "/admin" },
-      { label: "Buyer messages >24h", count: null, href: "/admin" },
+      { label: "Buyer messages >24h", count: snapshot.messageThreads.filter((row) => row.status === "open").length, href: "/seller/performance/messages" },
     ] };
     case "inventory": return { kind: id, value: inventoryMetrics(snapshot.products, snapshot.stock, snapshot.orders, now, (snapshot.settings.leadTimeDays ?? 10) + 7), updatedAt };
     case "health": {
